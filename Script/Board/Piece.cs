@@ -12,11 +12,17 @@ public partial class Piece : Node2D
 	private bool _isDragging = false;
 	private bool _dragginStart = false;
 	private bool _mouseOver = false;
+	private bool _clickedWhileHovering = false;
 
 	private Vector2 _prevPosition;
 
 	private Vector2I _boardPosition;
 	private BoardVisual _boardVisual;
+
+	public Vector2I BoardPosition
+	{
+		get => _boardPosition;
+	}
 	
 	// Called when the node enters the scene tree for the first time.
 	public void Init(ColourType colourType, Vector2I _boardPosition, BoardVisual _boardVisual)
@@ -28,18 +34,6 @@ public partial class Piece : Node2D
 	}
 
 	
-	public override void _UnhandledInput(InputEvent @event)
-	{
-		if (@event is InputEventMouseButton)
-		{
-			_isDragging = (@event as InputEventMouseButton).Pressed;
-			if ((@event as InputEventMouseButton).IsReleased())
-			{
-				_dragginStart = false;
-				_boardVisual.UpdateBoard((int)this.colourType,_boardPosition,_boardVisual.GlobalPositionToBoardPosition(GlobalPosition));
-			}
-		}
-	}
 
 	public override void _Ready()
 	{
@@ -59,6 +53,28 @@ public partial class Piece : Node2D
 			}
 			GlobalPosition = GetGlobalMousePosition();
 		}
+
+		if (_mouseOver)
+		{
+			if (Input.IsActionJustPressed("left_click") && !_clickedWhileHovering)
+			{
+				_clickedWhileHovering = true;
+			}
+
+			if (_clickedWhileHovering)
+			{
+				_isDragging = Input.IsActionPressed("left_click");
+			}
+
+			if (Input.IsActionJustReleased("left_click"))
+			{
+				_dragginStart = false;
+				_clickedWhileHovering = false;
+				Vector2I finalPos = _boardVisual.GlobalPositionToBoardPosition(GlobalPosition);
+				_boardVisual.UpdateBoard((int)colourType, _boardPosition, finalPos);
+			}
+		}
+		
 	}
 	
 

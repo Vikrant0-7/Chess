@@ -1,26 +1,32 @@
 using Godot;
 using System;
-
+using System.Collections.Generic;
 public class MoveValidity
 {
+    private static bool _debug = true;
     static 	ulong GetBit(int bit){
         return (ulong)1 << (bit);
     }
 
-    static bool _LegalPawnMoves(int pos)
+    static Vector2I IntToBoardPosition(int pos){
+        return new Vector2I(pos % 8, pos/8);
+    }
+    //Converts board's position to index of that position
+    static int BoardPositionToInt(int x, int y)
     {
-        return (pos == 8 || pos == 16 || pos == 7 || pos == 9);
+        return y * 8 + x;
+    }
+
+    static int BoardPositionToInt(Vector2I pos)
+    {
+        return pos.Y * 8 + pos.X;
     }
     
-    public static bool Pawn(Colour colour, ulong[] boardState, int posFrom, int posTo)
+    public static List<int> Pawn(Colour colour, ulong[] boardState, int pos)
     {
+        List<int> @out = new List<int>();
         if (colour == Colour.WHITE)
         {
-            if (!_LegalPawnMoves(posFrom - posTo))
-            {
-                return false;
-            }
-            
             ulong freeSquares = 0; //if any bit is 0 after the for loop that means that position do not have any piece
             ulong blackSquares = 0; //tells if given position is occupied by a black piece.
             for (int i = 0; i < 12; ++i)
@@ -29,43 +35,227 @@ public class MoveValidity
                 if (i > 5)
                     blackSquares |= boardState[i];
             }
-            
-            bool firstMove = (posFrom >= 48); //check if pawns are at second rank, as the can move 2 steps if they are.
-            int pos = posFrom - posTo;
-
-            //if pawn is moving in straight line
-            if (pos == 8 || pos == 16)
+            GD.Print("Freesquares = " + freeSquares);
+            GD.Print("BlackSquare = " + blackSquares);
+            bool notBlocked = false;
+            //if pawn next Square is Free
+            if (pos >= 8 && (freeSquares & GetBit(pos-8)) == 0)
             {
-                //if pawn is blocked
-                if ((freeSquares & GetBit(posFrom - 8)) != 0)
+                if (_debug)
+                    GD.Print("Next Square is Free");
+                @out.Add(pos-8);
+                notBlocked = true;
+            }
+            if (pos >= 48) //pawn is moving two steps
+            {
+                if (notBlocked && (freeSquares & GetBit(pos - 16)) == 0) //if pawn is notBlocked and position is free
                 {
-                    return false; //move is invalid
-                }
-                else if(pos == 16) //pawn is moving two steps
-                {
-                    if (!firstMove) //if pawn is not at 2nd rank
-                    {
-                        return false; //move is invalid
-                    }
-                    else
-                    {
-                        if ((freeSquares & GetBit(posTo)) != 0) //position to which pawn is moving is occupied 
-                            return false; //move is invalid
-                    }
+                    if (_debug)
+                        GD.Print("First move for pawn, can move 2 steps");
+                    @out.Add(pos-16);
                 }
             }
-            //pawn is capturing
-            else
+
+
+            if ((blackSquares & GetBit(pos - 7)) != 0) //if can capture a blackPiece 
             {
-                if ((blackSquares & GetBit(posTo)) == 0) //square is either not occupied or occupied by white piece
-                    return false; //move is invalid
+                @out.Add(pos-7);                
+            }
+            if ((blackSquares & GetBit(pos - 9)) != 0) //if can capture a blackPiece 
+            {
+                @out.Add(pos-9);                
             }
         }
         else
         {
-            
+            ulong freeSquares = 0; //if any bit is 0 after the for loop that means that position do not have any piece
+            ulong whiteSquares = 0; //tells if given position is occupied by a black piece.
+            for (int i = 0; i < 12; ++i)
+            {
+                freeSquares |= boardState[i];
+                if (i <= 5)
+                    whiteSquares |= boardState[i];
+            }
+
+            bool notBlocked = false;
+            //if pawn next Square is Free
+            if ((freeSquares & GetBit(pos+8)) == 0)
+            {
+                if (_debug)
+                    GD.Print("Next Square is Free");
+                @out.Add(pos+8);
+                notBlocked = true;
+            }
+            if (pos <= 15) //pawn is moving two steps
+            {
+                if (pos < 48 && notBlocked && (freeSquares & GetBit(pos + 16)) == 0) //if pawn is notBlocked
+                {
+                    if (_debug)
+                        GD.Print("First move for pawn, can move 2 steps");
+                    @out.Add(pos+16);
+                }
+            }
+
+
+            if ((whiteSquares & GetBit(pos + 7)) != 0) //if can capture a blackPiece 
+            {
+                @out.Add(pos+7);                
+            }
+            if ((whiteSquares & GetBit(pos + 9)) != 0) //if can capture a blackPiece 
+            {
+                @out.Add(pos+9);                
+            }
         }
 
-        return true;
+        return @out;
     }
+
+    public static List<int> Knight(Colour colour, ulong[] boardState, int pos)
+    {
+        List<int> @out = new List<int>();
+        if (colour == Colour.WHITE)
+        {
+            ulong whiteSquares = 0; //tells if given position is occupied by a black piece.
+            for (int i = 0; i <= 5; ++i)
+            { 
+                whiteSquares |= boardState[i];
+            }
+
+            Vector2I position = IntToBoardPosition(pos);
+            if (position.X - 2 >= 0)
+            {
+                if (position.Y - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 2, position.Y - 1);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.Y + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 2, position.Y + 1);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+            if (position.X + 2 < 8)
+            {
+                if (position.Y - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 2, position.Y - 1);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.Y + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 2, position.Y + 1);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+            
+            if (position.Y - 2 >= 0)
+            {
+                if (position.X - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 1, position.Y - 2);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.X + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 1, position.Y - 2);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+            if (position.Y + 2 < 8)
+            {
+                if (position.X - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 1, position.Y + 2);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.X + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 1, position.Y + 2);
+                    if((whiteSquares & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+        }
+        else
+        {
+            ulong blackSquare = 0; //tells if given position is occupied by a black piece.
+            for (int i = 6; i < 12; ++i)
+            { 
+                blackSquare |= boardState[i];
+            }
+
+            Vector2I position = IntToBoardPosition(pos);
+            if (position.X - 2 >= 0)
+            {
+                if (position.Y - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 2, position.Y - 1);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.Y + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 2, position.Y + 1);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+            if (position.X + 2 < 8)
+            {
+                if (position.Y - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 2, position.Y - 1);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.Y + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 2, position.Y + 1);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+            
+            if (position.Y - 2 >= 0)
+            {
+                if (position.X - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 1, position.Y - 2);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.X + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 1, position.Y - 2);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+            if (position.Y + 2 < 8)
+            {
+                if (position.X - 1 >= 0)
+                {
+                    int legalPosition = BoardPositionToInt(position.X - 1, position.Y + 2);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+                if (position.X + 1 < 8)
+                {
+                    int legalPosition = BoardPositionToInt(position.X + 1, position.Y + 2);
+                    if((blackSquare & GetBit(legalPosition)) == 0)
+                        @out.Add(legalPosition);
+                }
+            }
+        }
+        return @out;
+    }
+
 }
