@@ -149,10 +149,18 @@ public partial class BoardVisual : Node2D
 		List<int> moves = null;
 		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
 		if (pieceIndex == 5 || pieceIndex == 11)
-			moves = MoveValidity.Pawn(c, board.BoardStatus, board.BoardSnapshot, BoardPositionToInt(initialPosition));
+			moves = PseudoLegalMove.Pawn(c, board.BoardStatus, board.BoardSnapshot, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 4 || pieceIndex == 10)
-			moves = MoveValidity.Knight(c, board.BoardStatus, BoardPositionToInt(initialPosition));
-
+			moves = PseudoLegalMove.Knight(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+		if(pieceIndex == 3 || pieceIndex == 9)
+			moves = PseudoLegalMove.Bishop(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+		if(pieceIndex == 2 || pieceIndex == 8)
+			moves = PseudoLegalMove.Rook(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+		if(pieceIndex == 1 || pieceIndex == 7)
+			moves = PseudoLegalMove.Queen(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+		if(pieceIndex == 0 || pieceIndex == 6)
+			moves = PseudoLegalMove.King(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+		
 		if (moves != null)
 		{
 			foreach (var item in moves)
@@ -220,6 +228,5 @@ public partial class BoardVisual : Node2D
 			_moved = false;
 			SetBoard();
 		}
-		GD.Print(BoardPositionToInt(GlobalPositionToBoardPosition(GetGlobalMousePosition())));
 	}
 }

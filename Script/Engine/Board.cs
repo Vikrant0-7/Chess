@@ -2,6 +2,8 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+
+//Todo: Make bitboard of currently square currently under attack by opposition.
 public class Board
 {
 
@@ -84,14 +86,36 @@ public class Board
 			return MoveKnight(pieceIdx, initialPos, finalPos, out caputure);
 		}
 
+		if (pieceIdx == 3 || pieceIdx == 9)
+		{
+			return MoveBishop(pieceIdx, initialPos, finalPos, out caputure);
+		}
+		
+		if (pieceIdx == 2 || pieceIdx == 8)
+		{
+			return MoveRook(pieceIdx, initialPos, finalPos, out caputure);
+		}
+		
+		if (pieceIdx == 1 || pieceIdx == 7)
+		{
+			return MoveQueen(pieceIdx, initialPos, finalPos, out caputure);
+		}
+		
+		if (pieceIdx == 0 || pieceIdx == 6)
+		{
+			return MoveKing(pieceIdx, initialPos, finalPos, out caputure);
+		}
+
 		return false;
 	}
 
+	//Execpt MovePawn() method, every other Move<Piece> is same
+	//Todo: Merge Merge MoveKnight, MoveBishop, MoveQueen, MoveRook, MoveKing 
 	bool MovePawn(int pieceIdx, int initialPos, int finalPos, out bool caputure)
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = MoveValidity.Pawn(c, boardStatus, boardSnapshot, initialPos);
+		List<int> moves = PseudoLegalMove.Pawn(c, boardStatus, boardSnapshot, initialPos);
 
 		if (moves.Contains(finalPos))
 		{
@@ -135,7 +159,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = MoveValidity.Knight(c, boardStatus, initialPos);
+		List<int> moves = PseudoLegalMove.Knight(c, boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
@@ -152,6 +176,98 @@ public class Board
 			return true;
 		}
 
+		return false;
+	}
+	
+	bool MoveBishop(int pieceIdx, int initialPos, int finalPos, out bool caputure)
+	{
+		caputure = false;
+		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
+		List<int> moves = PseudoLegalMove.Bishop(c, boardStatus, initialPos);
+		if (moves.Contains(finalPos))
+		{
+			GetSnapshot();
+			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+			{
+				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				{
+					caputure = true;
+					boardStatus[i] ^= GetBit(finalPos);
+					break;
+				}
+			}
+			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			return true;
+		}
+		return false;
+	}
+	
+	bool MoveQueen(int pieceIdx, int initialPos, int finalPos, out bool caputure)
+	{
+		caputure = false;
+		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
+		List<int> moves = PseudoLegalMove.Queen(c, boardStatus, initialPos);
+		if (moves.Contains(finalPos))
+		{
+			GetSnapshot();
+			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+			{
+				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				{
+					caputure = true;
+					boardStatus[i] ^= GetBit(finalPos);
+					break;
+				}
+			}
+			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			return true;
+		}
+		return false;
+	}
+	
+	bool MoveRook(int pieceIdx, int initialPos, int finalPos, out bool caputure)
+	{
+		caputure = false;
+		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
+		List<int> moves = PseudoLegalMove.Rook(c, boardStatus, initialPos);
+		if (moves.Contains(finalPos))
+		{
+			GetSnapshot();
+			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+			{
+				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				{
+					caputure = true;
+					boardStatus[i] ^= GetBit(finalPos);
+					break;
+				}
+			}
+			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			return true;
+		}
+		return false;
+	}
+	
+	bool MoveKing(int pieceIdx, int initialPos, int finalPos, out bool caputure)
+	{
+		caputure = false;
+		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
+		List<int> moves = PseudoLegalMove.King(c, boardStatus, initialPos);
+		if (moves.Contains(finalPos))
+		{
+			GetSnapshot();
+			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+			{
+				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				{
+					caputure = true;
+					boardStatus[i] ^= GetBit(finalPos);
+					break;
+				}
+			}
+			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			return true;
+		}
 		return false;
 	}
 }
