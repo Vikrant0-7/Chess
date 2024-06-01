@@ -13,6 +13,11 @@ public class Board
 	{
 		get => boardStatus;
 	}
+
+	public ulong[] BoardSnapshot
+	{
+		get => boardSnapshot;
+	}
 	
 	public Board(){
 		boardStatus = new ulong[12];
@@ -86,23 +91,40 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = MoveValidity.Pawn(c, boardStatus, initialPos);
+		List<int> moves = MoveValidity.Pawn(c, boardStatus, boardSnapshot, initialPos);
 
 		if (moves.Contains(finalPos))
 		{
+			GetSnapshot();
 			if (Mathf.Abs(initialPos - finalPos) % 2 == 1)
 			{
-				caputure = true;
 				for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 				{
 					if ((boardStatus[i] & GetBit(finalPos)) != 0)
 					{
 						boardStatus[i] ^= GetBit(finalPos);
+						caputure = true;
 						break;
 					}
 				}
-			}
+				//handles capures by en passente
+				if (c == Colour.WHITE && !caputure)
+				{
+					if ((BoardStatus[11] & GetBit(finalPos)) == 0) //not need but just is case
+					{
+						boardStatus[11] ^= GetBit(finalPos + 8);
+					}
+				}
+				else if (c == Colour.BLACK && !caputure)
+				{
+					if ((BoardStatus[5] & GetBit(finalPos)) == 0) //not needed but just in case
+					{
+						boardStatus[5] ^= GetBit(finalPos - 8);
+					}
+				}
 
+				caputure = true;
+			}
 			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
 			return true;
 		}
@@ -116,6 +138,7 @@ public class Board
 		List<int> moves = MoveValidity.Knight(c, boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
+			GetSnapshot();
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
 				if ((boardStatus[i] & GetBit(finalPos)) != 0)

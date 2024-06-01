@@ -59,6 +59,7 @@ public partial class Piece : Node2D
 			if (Input.IsActionJustPressed("left_click") && !_clickedWhileHovering)
 			{
 				_clickedWhileHovering = true;
+				_boardVisual.ShowMoves((int)colourType, _boardPosition);
 			}
 
 			if (_clickedWhileHovering)
@@ -71,7 +72,9 @@ public partial class Piece : Node2D
 				_dragginStart = false;
 				_clickedWhileHovering = false;
 				Vector2I finalPos = _boardVisual.GlobalPositionToBoardPosition(GlobalPosition);
+				
 				_boardVisual.UpdateBoard((int)colourType, _boardPosition, finalPos);
+				_boardVisual.Reset();
 			}
 		}
 		

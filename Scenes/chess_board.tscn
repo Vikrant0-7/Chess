@@ -8,20 +8,21 @@
 [node name="Chess Board" type="Node2D"]
 position = Vector2(-2, -1)
 script = ExtResource("1_6qg82")
-quad = ExtResource("2_w26xg")
-text = ExtResource("3_ql0j3")
-pieceInstance = ExtResource("4_7x6rc")
-topLeftPosition = NodePath("Marker2D")
-pieceContainer = NodePath("Marker2D/Node2D")
-darkSquares = Color(0.309804, 0.439216, 0.337255, 1)
-lightSquares = Color(0.654902, 0.654902, 0.654902, 1)
+_quad = ExtResource("2_w26xg")
+_text = ExtResource("3_ql0j3")
+_pieceInstance = ExtResource("4_7x6rc")
+_darkSquares = Color(0.42195, 0.563418, 0.442958, 1)
+_lightSquares = Color(0.724643, 0.724643, 0.724643, 1)
 
-[node name="Marker2D" type="Marker2D" parent="."]
-position = Vector2(133, 47)
-gizmo_extents = 32.9
+[node name="Marker" type="Marker2D" parent="."]
+position = Vector2(66, 66)
+gizmo_extents = 64.0
 
-[node name="Node2D" type="Node2D" parent="Marker2D"]
+[node name="Squares" type="Node2D" parent="Marker"]
+
+[node name="Piece" type="Node2D" parent="Marker"]
+
+[node name="Labels" type="Node2D" parent="Marker"]
 light_mask = 0
 visibility_layer = 2
 z_index = 100
-position = Vector2(-133, -47)
