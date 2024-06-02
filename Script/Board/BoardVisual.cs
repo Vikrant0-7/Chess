@@ -36,6 +36,8 @@ public partial class BoardVisual : Node2D
 	{
 		board = new Board();
 		
+		LegalMoves.Init(board);
+		
 		_positionPlaceHolder = GetNode<Marker2D>("Marker");
 		_pieceContainer = GetNode<Node2D>("Marker/Piece");
 		_labelContainer = GetNode<Node2D>("Marker/Labels");
@@ -151,17 +153,17 @@ public partial class BoardVisual : Node2D
 		List<int> moves = null;
 		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
 		if (pieceIndex == 5 || pieceIndex == 11)
-			moves = PseudoLegalMove.Pawn(c, board.BoardStatus, board.BoardSnapshot, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Pawn(c, board.BoardStatus, board.BoardSnapshot, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 4 || pieceIndex == 10)
-			moves = PseudoLegalMove.Knight(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Knight(c, board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 3 || pieceIndex == 9)
-			moves = PseudoLegalMove.Bishop(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Bishop(c, board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 2 || pieceIndex == 8)
-			moves = PseudoLegalMove.Rook(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Rook(c, board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 1 || pieceIndex == 7)
-			moves = PseudoLegalMove.Queen(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Queen(c, board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 0 || pieceIndex == 6)
-			moves = PseudoLegalMove.King(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.King(c, board.BoardStatus, BoardPositionToInt(initialPosition));
 		
 		if (moves != null)
 		{
@@ -198,16 +200,16 @@ public partial class BoardVisual : Node2D
 	public void ShowAttacks()
 	{
 		ulong attacked = AttackBitboard.GetAttackBitBoard(Colour.WHITE,board.BoardStatus);
-
+		GD.Print("Attacks: ", attacked);
 		for (int i = 0; i < 64; ++i)
 		{
 			if ((attacked & (ulong)1 << i) != 0)
 			{
 				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
 				if (sq.Modulate == _darkSquares)
-					sq.Modulate = _pathDarkSquare;
+					sq.Modulate = _attackDarkSqaure;
 				else if (sq.Modulate == _lightSquares)
-					sq.Modulate = _pathLightSquare;
+					sq.Modulate = _attackLighSquare;
 			}
 		}
 	}

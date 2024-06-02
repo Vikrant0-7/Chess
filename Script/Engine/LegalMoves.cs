@@ -2,18 +2,15 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-//There is a lot of scope of optimisation here.
-//Todo: Get legal moves from pseudolegal moves.
-/* Pseudolegal Move: Moves which satisfy rules defined on how pieces moves and how they caputure
- * Eg Knight moves in L, bishops moves in diagonals,
-*/
-/* Legal Moves: Pseudolegal moves that do not let the king be captured.
- * Eg. You cannot move a knight pinned with king. If you do so your king can be captured in next move. 
+/* FIXME: Try to optimise search for legal moves
+ * Currently search works on making all pseudolegal moves
+ * and see if king can be captured, if it can it is illegal.
  */
 
 //Todo: Add support for castling
-public class PseudoLegalMove
+public class LegalMoves
 {
+    private static Board board;
     private static bool _debug = true;
     static 	ulong GetBit(int bit){
         return (ulong)1 << (bit);
@@ -28,10 +25,16 @@ public class PseudoLegalMove
         return y * 8 + x;
     }
 
+    public static void Init(Board b)
+    {
+        board = b;
+    }
+
     static int BoardPositionToInt(Vector2I pos)
     {
         return pos.Y * 8 + pos.X;
     }
+    
     
     public static List<int> Pawn(Colour colour, ulong[] boardState, ulong[] prevPawnState, int pos, bool attacks = false)
     {
@@ -159,7 +162,8 @@ public class PseudoLegalMove
 
             }
         }
-
+        if(!attacks)
+            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 5, pos, @out);
         return @out;
     }
 
@@ -244,6 +248,8 @@ public class PseudoLegalMove
                         @out.Add(legalPosition);
                 }
             }
+        if(!attacks)
+            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 4, pos, @out);
         return @out;
     }
 
@@ -372,6 +378,8 @@ public class PseudoLegalMove
                     stopSearchRight = true;
                 }
             }
+        if(!attacks)
+            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 3, pos, @return);
         return @return;
     }
 
@@ -490,15 +498,250 @@ public class PseudoLegalMove
                 break;
             }
         }
-        
+        if(!attacks)
+            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 2, pos, moves);
         return moves;
     }
 
-    public static List<int> Queen(Colour colour, ulong[] boardState, int pos,  bool attacks = false)
+    public static List<int> Queen(Colour colour, ulong[] boardState, int pos, bool attacks = false)
     {
-        List<int> @out = Rook(colour, boardState, pos,attacks);
-        @out.AddRange(Bishop(colour, boardState, pos,attacks));
-        return @out;
+        ulong freeSquares = 0;
+        ulong oppositeSquares = 0;
+        List<int> moves = new List<int>();
+
+        if (colour == Colour.BLACK)
+        {
+            for (int i = 0; i < boardState.Length; ++i)
+            {
+                freeSquares |= boardState[i];
+                if (i <= 5)
+                {
+                    oppositeSquares |= boardState[i];
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < boardState.Length; ++i)
+            {
+                freeSquares |= boardState[i];
+                if (i > 5)
+                {
+                    oppositeSquares |= boardState[i];
+                }
+            }
+        }
+
+        Vector2I position = IntToBoardPosition(pos);
+
+        for (int x = position.X - 1; x >= 0; --x)
+        {
+            int possiblePosition = BoardPositionToInt(x, position.Y);
+            if ((freeSquares & GetBit(possiblePosition)) == 0)
+            {
+                moves.Add(possiblePosition);
+            }
+            else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
+            {
+                moves.Add(possiblePosition);
+                break;
+            }
+            else
+            {
+                if (attacks)
+                {
+                    moves.Add(possiblePosition);
+                }
+
+                break;
+            }
+        }
+
+        for (int x = position.X + 1; x < 8; ++x)
+        {
+            int possiblePosition = BoardPositionToInt(x, position.Y);
+            if ((freeSquares & GetBit(possiblePosition)) == 0)
+            {
+                moves.Add(possiblePosition);
+            }
+            else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
+            {
+                moves.Add(possiblePosition);
+                break;
+            }
+            else
+            {
+                if (attacks)
+                {
+                    moves.Add(possiblePosition);
+                }
+
+                break;
+            }
+        }
+
+        for (int y = position.Y - 1; y >= 0; --y)
+        {
+            int possiblePosition = BoardPositionToInt(position.X, y);
+            if ((freeSquares & GetBit(possiblePosition)) == 0)
+            {
+                moves.Add(possiblePosition);
+            }
+            else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
+            {
+                moves.Add(possiblePosition);
+                break;
+            }
+            else
+            {
+                if (attacks)
+                {
+                    moves.Add(possiblePosition);
+                }
+
+                break;
+            }
+        }
+
+        for (int y = position.Y + 1; y < 8; ++y)
+        {
+            int possiblePosition = BoardPositionToInt(position.X, y);
+            if ((freeSquares & GetBit(possiblePosition)) == 0)
+            {
+                moves.Add(possiblePosition);
+            }
+            else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
+            {
+                moves.Add(possiblePosition);
+                break;
+            }
+            else
+            {
+                if (attacks)
+                {
+                    moves.Add(possiblePosition);
+                }
+
+                break;
+            }
+        }
+
+        Vector2I boardPosition = IntToBoardPosition(pos);
+        int i1 = 1;
+        bool stopSearchLeft = false, stopSearchRight = false;
+
+        for (int y = boardPosition.Y - 1; y >= 0; --y, ++i1)
+        {
+            int possiblePos = BoardPositionToInt(boardPosition.X - i1, y);
+            if (boardPosition.X - i1 < 0)
+            {
+                stopSearchLeft = true;
+            }
+
+            if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
+            {
+                moves.Add(possiblePos);
+            }
+            else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                moves.Add(possiblePos);
+                stopSearchLeft = true;
+            }
+            else
+            {
+                if (!stopSearchLeft && attacks)
+                {
+                    moves.Add(possiblePos);
+                }
+
+                stopSearchLeft = true;
+            }
+
+            possiblePos = BoardPositionToInt(boardPosition.X + i1, y);
+            if (boardPosition.X + i1 >= 8)
+            {
+                stopSearchRight = true;
+            }
+
+            if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
+            {
+                moves.Add(possiblePos);
+            }
+            else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                moves.Add(possiblePos);
+                stopSearchRight = true;
+            }
+            else
+            {
+                if (!stopSearchRight && attacks)
+                {
+                    moves.Add(possiblePos);
+                }
+
+                stopSearchRight = true;
+            }
+        }
+
+        i1 = 1;
+        stopSearchLeft = false;
+        stopSearchRight = false;
+        for (int y = boardPosition.Y + 1; y < 8; ++y, ++i1)
+        {
+            int possiblePos = BoardPositionToInt(boardPosition.X - i1, y);
+            if (boardPosition.X - i1 < 0)
+            {
+                stopSearchLeft = true;
+            }
+
+            if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
+            {
+                moves.Add(possiblePos);
+            }
+            else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                moves.Add(possiblePos);
+                stopSearchLeft = true;
+            }
+            else
+            {
+                if (!stopSearchLeft && attacks)
+                {
+                    moves.Add(possiblePos);
+                }
+
+                stopSearchLeft = true;
+            }
+
+            possiblePos = BoardPositionToInt(boardPosition.X + i1, y);
+            if (boardPosition.X + i1 >= 8)
+            {
+                stopSearchRight = true;
+            }
+
+            if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
+            {
+                moves.Add(possiblePos);
+            }
+            else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                moves.Add(possiblePos);
+                stopSearchRight = true;
+            }
+            else
+            {
+                if (!stopSearchRight && attacks)
+                {
+                    moves.Add(possiblePos);
+                }
+
+                stopSearchRight = true;
+            }
+        }
+
+        if (!attacks)
+            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 1, pos, moves);
+        return moves;
     }
 
     public static List<int> King(Colour colour, ulong[] boardState, int pos,  bool attacks = false)
@@ -541,11 +784,13 @@ public class PseudoLegalMove
                 if((sameSquares & GetBit(possiblePosition)) == 0)
                     moves.Add(possiblePosition);
                 else if(attacks)
-                        moves.Add(possiblePosition);
+                    moves.Add(possiblePosition);
             }
-
         }
 
+        if(!attacks)
+            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6), pos, moves);
         return moves;
     }
+
 }

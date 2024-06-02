@@ -7,11 +7,9 @@ using System.Collections.Generic;
 public class Board
 {
 
-	int[] _pieceCount;
 
 	private ulong[] _boardStatus;
 	private ulong[] _boardSnapshot;
-	private ulong[] _bakSnapshot;
 	public ulong[] BoardStatus => _boardStatus;
 
 	public ulong[] BoardSnapshot
@@ -22,8 +20,6 @@ public class Board
 	public Board(){
 		_boardStatus = new ulong[12];
 		_boardSnapshot = new ulong[12];
-		_bakSnapshot = new ulong[12];
-		_pieceCount = new int[]{1,1,2,2,2,8,1,1,2,2,2,8};
 	}
 
 	ulong GetBit(int bit){
@@ -67,20 +63,7 @@ public class Board
 			_boardStatus[i] = _boardSnapshot[i];
 		}
 	}
-
-	private void BakSnapshot(bool rev = false)
-	{
-		if (rev)
-		{
-			for (int i = 0; i < 12; ++i)
-				_boardSnapshot[i] = _bakSnapshot[i];
-		}
-		else
-		{
-			for (int i = 0; i < 12; ++i)
-				_bakSnapshot[i] = _boardSnapshot[i];
-		}
-	}
+	
 
 	public int GetIndex(Type type, Colour colour){
 		return ((colour == Colour.WHITE) ? 0 : 1) * 6 + (int)type;
@@ -127,36 +110,6 @@ public class Board
 		{
 			valid =  MoveKing(pieceIdx, initialPos, finalPos, out caputure);
 		}
-
-		if (valid)
-		{
-			if (pieceIdx <= 5)
-			{
-				if ((AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus) & _boardStatus[0]) != 0)
-				{
-					RevertToSnapshot();
-					BakSnapshot(true);
-					valid = false;
-				}
-				else
-				{
-					BakSnapshot();
-				}
-			}
-			else
-			{
-				if ((AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus) & _boardStatus[6]) != 0)
-				{
-					RevertToSnapshot();
-					BakSnapshot(true);
-					valid = false;
-				}
-				else
-				{
-					BakSnapshot();
-				}
-			}
-		}
 		
 		return valid;
 	}
@@ -167,7 +120,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Pawn(c, _boardStatus, _boardSnapshot, initialPos);
+		List<int> moves = global::LegalMoves.Pawn(c, _boardStatus, _boardSnapshot, initialPos);
 
 		if (moves.Contains(finalPos))
 		{
@@ -210,7 +163,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Knight(c, _boardStatus, initialPos);
+		List<int> moves = global::LegalMoves.Knight(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
@@ -234,7 +187,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Bishop(c, _boardStatus, initialPos);
+		List<int> moves = global::LegalMoves.Bishop(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
@@ -257,7 +210,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Queen(c, _boardStatus, initialPos);
+		List<int> moves = global::LegalMoves.Queen(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
@@ -280,7 +233,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Rook(c, _boardStatus, initialPos);
+		List<int> moves = global::LegalMoves.Rook(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
@@ -303,7 +256,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.King(c, _boardStatus, initialPos);
+		List<int> moves = global::LegalMoves.King(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
@@ -320,6 +273,49 @@ public class Board
 			return true;
 		}
 		return false;
+	}
+
+
+	public List<int> LegalMoves(int pieceIdx, int pos, List<int> moves)
+	{
+		List<int> lastPlace = new List<int>(moves);
+		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
+
+		foreach (var finalPos in moves)
+		{
+			ulong[] tmpBoardStatus = new ulong[12];
+			for (int i = 0; i < 12; ++i)
+			{
+				tmpBoardStatus[i] = _boardStatus[i];
+			}
+			
+			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+			{
+				if ((tmpBoardStatus[i] & GetBit(finalPos)) != 0)
+				{
+					tmpBoardStatus[i] ^= GetBit(finalPos);
+					break;
+				}
+			}
+			tmpBoardStatus[pieceIdx] ^= (GetBit(pos) | GetBit(finalPos));
+			if (c == Colour.WHITE)
+			{
+				ulong a = AttackBitboard.GetAttackBitBoard(Colour.BLACK, tmpBoardStatus);
+				if ( (a & tmpBoardStatus[0]) != 0)
+				{
+					lastPlace.Remove(finalPos);
+				}
+			}
+			else
+			{
+				ulong a = AttackBitboard.GetAttackBitBoard(Colour.WHITE, tmpBoardStatus);
+				if ((a & tmpBoardStatus[6]) != 0)
+				{
+					lastPlace.Remove(finalPos);
+				}
+			}
+		}
+		return lastPlace;
 	}
 	
 }

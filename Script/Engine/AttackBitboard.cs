@@ -23,7 +23,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.King(Colour.BLACK,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.King(Colour.BLACK,boardStatus,j,true));
                                 break;
                             }
                         }
@@ -35,7 +35,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Queen(Colour.BLACK,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Queen(Colour.BLACK,boardStatus,j,true));
                                 break;
                             }
                         }
@@ -48,7 +48,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Rook(Colour.BLACK,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Rook(Colour.BLACK,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 2)
@@ -63,7 +63,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Bishop(Colour.BLACK,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Bishop(Colour.BLACK,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 2)
@@ -78,7 +78,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Knight(Colour.BLACK,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Knight(Colour.BLACK,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 2)
@@ -93,7 +93,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Pawn(Colour.BLACK,boardStatus,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Pawn(Colour.BLACK,boardStatus,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 8)
@@ -122,7 +122,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.King(Colour.WHITE,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.King(Colour.WHITE,boardStatus,j,true));
                                 break;
                             }
                         }
@@ -134,7 +134,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Queen(Colour.WHITE,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Queen(Colour.WHITE,boardStatus,j,true));
                                 break;
                             }
                         }
@@ -147,7 +147,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Rook(Colour.WHITE,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Rook(Colour.WHITE,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 2)
@@ -162,7 +162,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Bishop(Colour.WHITE,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Bishop(Colour.WHITE,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 2)
@@ -177,7 +177,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Knight(Colour.WHITE,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Knight(Colour.WHITE,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 2)
@@ -192,7 +192,7 @@ public class AttackBitboard
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
-                                moves.AddRange(PseudoLegalMove.Pawn(Colour.WHITE,boardStatus,boardStatus,j,true));
+                                moves.AddRange(LegalMoves.Pawn(Colour.WHITE,boardStatus,boardStatus,j,true));
                                 ++c;
                             }
                             if(c == 8)
