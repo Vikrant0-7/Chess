@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-
+//Todo: Migrate Checking Legal moves to PseudoLegalMoves Class.
 //Todo: Make bitboard of currently square currently under attack by opposition.
 public class Board
 {
@@ -11,14 +11,9 @@ public class Board
 
 	private ulong[] _boardStatus;
 	private ulong[] _boardSnapshot;
-	public ulong[] BoardStatus
-	{
-		get => _boardStatus;
-	}
+	private ulong[] _bakSnapshot;
+	public ulong[] BoardStatus => _boardStatus;
 
-	private ulong _whiteAttacks;
-	private ulong _blackAttacks;
-	
 	public ulong[] BoardSnapshot
 	{
 		get => _boardSnapshot;
@@ -27,6 +22,7 @@ public class Board
 	public Board(){
 		_boardStatus = new ulong[12];
 		_boardSnapshot = new ulong[12];
+		_bakSnapshot = new ulong[12];
 		_pieceCount = new int[]{1,1,2,2,2,8,1,1,2,2,2,8};
 	}
 
@@ -53,9 +49,6 @@ public class Board
 			_boardStatus[GetIndex(Type.PAWN,Colour.WHITE)] |= GetBit(i);
 		}
 
-		_blackAttacks = AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus);
-		_whiteAttacks = AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus);
-
 		GetSnapshot();
 	}
 
@@ -72,6 +65,20 @@ public class Board
 		for (int i = 0; i < _boardStatus.Length; ++i)
 		{
 			_boardStatus[i] = _boardSnapshot[i];
+		}
+	}
+
+	private void BakSnapshot(bool rev = false)
+	{
+		if (rev)
+		{
+			for (int i = 0; i < 12; ++i)
+				_boardSnapshot[i] = _bakSnapshot[i];
+		}
+		else
+		{
+			for (int i = 0; i < 12; ++i)
+				_bakSnapshot[i] = _boardSnapshot[i];
 		}
 	}
 
@@ -125,11 +132,29 @@ public class Board
 		{
 			if (pieceIdx <= 5)
 			{
-				_blackAttacks = AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus);
+				if ((AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus) & _boardStatus[0]) != 0)
+				{
+					RevertToSnapshot();
+					BakSnapshot(true);
+					valid = false;
+				}
+				else
+				{
+					BakSnapshot();
+				}
 			}
 			else
 			{
-				_whiteAttacks = AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus);
+				if ((AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus) & _boardStatus[6]) != 0)
+				{
+					RevertToSnapshot();
+					BakSnapshot(true);
+					valid = false;
+				}
+				else
+				{
+					BakSnapshot();
+				}
 			}
 		}
 		
@@ -173,7 +198,6 @@ public class Board
 						_boardStatus[5] ^= GetBit(finalPos - 8);
 					}
 				}
-
 				caputure = true;
 			}
 			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
