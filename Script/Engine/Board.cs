@@ -7,24 +7,27 @@ using System.Collections.Generic;
 public class Board
 {
 
-	int[] pieceCount;
+	int[] _pieceCount;
 
-	ulong[] boardStatus;
-	private ulong[] boardSnapshot;
+	private ulong[] _boardStatus;
+	private ulong[] _boardSnapshot;
 	public ulong[] BoardStatus
 	{
-		get => boardStatus;
+		get => _boardStatus;
 	}
 
+	private ulong _whiteAttacks;
+	private ulong _blackAttacks;
+	
 	public ulong[] BoardSnapshot
 	{
-		get => boardSnapshot;
+		get => _boardSnapshot;
 	}
 	
 	public Board(){
-		boardStatus = new ulong[12];
-		boardSnapshot = new ulong[12];
-		pieceCount = new int[]{1,1,2,2,2,8,1,1,2,2,2,8};
+		_boardStatus = new ulong[12];
+		_boardSnapshot = new ulong[12];
+		_pieceCount = new int[]{1,1,2,2,2,8,1,1,2,2,2,8};
 	}
 
 	ulong GetBit(int bit){
@@ -32,32 +35,43 @@ public class Board
 	}
 
 	public void InitialBoardConfig(){
-		boardStatus[GetIndex(Type.KING,Colour.BLACK)] = GetBit(4);
-		boardStatus[GetIndex(Type.QUEEN,Colour.BLACK)] = GetBit(3);
-		boardStatus[GetIndex(Type.ROOK,Colour.BLACK)] = GetBit(0) | GetBit(7);
-		boardStatus[GetIndex(Type.BISHOP,Colour.BLACK)] = GetBit(2) | GetBit(5);
-		boardStatus[GetIndex(Type.KNIGHT,Colour.BLACK)] = GetBit(1) | GetBit(6);
+		_boardStatus[GetIndex(Type.KING,Colour.BLACK)] = GetBit(4);
+		_boardStatus[GetIndex(Type.QUEEN,Colour.BLACK)] = GetBit(3);
+		_boardStatus[GetIndex(Type.ROOK,Colour.BLACK)] = GetBit(0) | GetBit(7);
+		_boardStatus[GetIndex(Type.BISHOP,Colour.BLACK)] = GetBit(2) | GetBit(5);
+		_boardStatus[GetIndex(Type.KNIGHT,Colour.BLACK)] = GetBit(1) | GetBit(6);
 		for(int i = 8; i <= 15; ++i){
-			boardStatus[GetIndex(Type.PAWN,Colour.BLACK)] |= GetBit(i);
+			_boardStatus[GetIndex(Type.PAWN,Colour.BLACK)] |= GetBit(i);
 		}
 
-		boardStatus[GetIndex(Type.KING,Colour.WHITE)] = GetBit(60);
-		boardStatus[GetIndex(Type.QUEEN,Colour.WHITE)] = GetBit(59);
-		boardStatus[GetIndex(Type.ROOK,Colour.WHITE)] = GetBit(56) | GetBit(63);
-		boardStatus[GetIndex(Type.BISHOP,Colour.WHITE)] = GetBit(58) | GetBit(61);
-		boardStatus[GetIndex(Type.KNIGHT,Colour.WHITE)] = GetBit(62) | GetBit(57);
+		_boardStatus[GetIndex(Type.KING,Colour.WHITE)] = GetBit(60);
+		_boardStatus[GetIndex(Type.QUEEN,Colour.WHITE)] = GetBit(59);
+		_boardStatus[GetIndex(Type.ROOK,Colour.WHITE)] = GetBit(56) | GetBit(63);
+		_boardStatus[GetIndex(Type.BISHOP,Colour.WHITE)] = GetBit(58) | GetBit(61);
+		_boardStatus[GetIndex(Type.KNIGHT,Colour.WHITE)] = GetBit(62) | GetBit(57);
 		for(int i = 48; i <= 55; ++i){
-			boardStatus[GetIndex(Type.PAWN,Colour.WHITE)] |= GetBit(i);
+			_boardStatus[GetIndex(Type.PAWN,Colour.WHITE)] |= GetBit(i);
 		}
+
+		_blackAttacks = AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus);
+		_whiteAttacks = AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus);
 
 		GetSnapshot();
 	}
 
 	private void GetSnapshot()
 	{
-		for (int i = 0; i < boardStatus.Length; ++i)
+		for (int i = 0; i < _boardStatus.Length; ++i)
 		{
-			boardSnapshot[i] = boardStatus[i];
+			_boardSnapshot[i] = _boardStatus[i];
+		}
+	}
+
+	private void RevertToSnapshot()
+	{
+		for (int i = 0; i < _boardStatus.Length; ++i)
+		{
+			_boardStatus[i] = _boardSnapshot[i];
 		}
 	}
 
@@ -70,43 +84,56 @@ public class Board
 		if(position < 0 || position >= 64){
 			throw new IndexOutOfRangeException("Position should be in range [0,63]: " + position.ToString());
 		}
-		return (boardStatus[pieceIndex] & GetBit(position)) != 0; 
+		return (_boardStatus[pieceIndex] & GetBit(position)) != 0; 
 	}
 
 	public bool Move(int pieceIdx, int initialPos, int finalPos, out bool caputure)
 	{
 		caputure = false;
+		bool valid = false;
 		if (pieceIdx == 5 || pieceIdx == 11)
 		{
-			return MovePawn(pieceIdx, initialPos, finalPos, out caputure);
+			valid =  MovePawn(pieceIdx, initialPos, finalPos, out caputure);
 		}
 
 		if (pieceIdx == 4 || pieceIdx == 10)
 		{
-			return MoveKnight(pieceIdx, initialPos, finalPos, out caputure);
+			valid =  MoveKnight(pieceIdx, initialPos, finalPos, out caputure);
 		}
 
 		if (pieceIdx == 3 || pieceIdx == 9)
 		{
-			return MoveBishop(pieceIdx, initialPos, finalPos, out caputure);
+			valid =  MoveBishop(pieceIdx, initialPos, finalPos, out caputure);
 		}
 		
 		if (pieceIdx == 2 || pieceIdx == 8)
 		{
-			return MoveRook(pieceIdx, initialPos, finalPos, out caputure);
+			valid =  MoveRook(pieceIdx, initialPos, finalPos, out caputure);
 		}
 		
 		if (pieceIdx == 1 || pieceIdx == 7)
 		{
-			return MoveQueen(pieceIdx, initialPos, finalPos, out caputure);
+			valid =  MoveQueen(pieceIdx, initialPos, finalPos, out caputure);
 		}
 		
 		if (pieceIdx == 0 || pieceIdx == 6)
 		{
-			return MoveKing(pieceIdx, initialPos, finalPos, out caputure);
+			valid =  MoveKing(pieceIdx, initialPos, finalPos, out caputure);
 		}
 
-		return false;
+		if (valid)
+		{
+			if (pieceIdx <= 5)
+			{
+				_blackAttacks = AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus);
+			}
+			else
+			{
+				_whiteAttacks = AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus);
+			}
+		}
+		
+		return valid;
 	}
 
 	//Execpt MovePawn() method, every other Move<Piece> is same
@@ -115,7 +142,7 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Pawn(c, boardStatus, boardSnapshot, initialPos);
+		List<int> moves = PseudoLegalMove.Pawn(c, _boardStatus, _boardSnapshot, initialPos);
 
 		if (moves.Contains(finalPos))
 		{
@@ -124,9 +151,9 @@ public class Board
 			{
 				for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 				{
-					if ((boardStatus[i] & GetBit(finalPos)) != 0)
+					if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 					{
-						boardStatus[i] ^= GetBit(finalPos);
+						_boardStatus[i] ^= GetBit(finalPos);
 						caputure = true;
 						break;
 					}
@@ -136,20 +163,20 @@ public class Board
 				{
 					if ((BoardStatus[11] & GetBit(finalPos)) == 0) //not need but just is case
 					{
-						boardStatus[11] ^= GetBit(finalPos + 8);
+						_boardStatus[11] ^= GetBit(finalPos + 8);
 					}
 				}
 				else if (c == Colour.BLACK && !caputure)
 				{
 					if ((BoardStatus[5] & GetBit(finalPos)) == 0) //not needed but just in case
 					{
-						boardStatus[5] ^= GetBit(finalPos - 8);
+						_boardStatus[5] ^= GetBit(finalPos - 8);
 					}
 				}
 
 				caputure = true;
 			}
-			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
 			return true;
 		}
 		return false;
@@ -159,20 +186,20 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Knight(c, boardStatus, initialPos);
+		List<int> moves = PseudoLegalMove.Knight(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
-				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 				{
 					caputure = true;
-					boardStatus[i] ^= GetBit(finalPos);
+					_boardStatus[i] ^= GetBit(finalPos);
 					break;
 				}
 			}
-			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
 			return true;
 		}
 
@@ -183,20 +210,20 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Bishop(c, boardStatus, initialPos);
+		List<int> moves = PseudoLegalMove.Bishop(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
-				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 				{
 					caputure = true;
-					boardStatus[i] ^= GetBit(finalPos);
+					_boardStatus[i] ^= GetBit(finalPos);
 					break;
 				}
 			}
-			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
 			return true;
 		}
 		return false;
@@ -206,20 +233,20 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Queen(c, boardStatus, initialPos);
+		List<int> moves = PseudoLegalMove.Queen(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
-				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 				{
 					caputure = true;
-					boardStatus[i] ^= GetBit(finalPos);
+					_boardStatus[i] ^= GetBit(finalPos);
 					break;
 				}
 			}
-			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
 			return true;
 		}
 		return false;
@@ -229,20 +256,20 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.Rook(c, boardStatus, initialPos);
+		List<int> moves = PseudoLegalMove.Rook(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
-				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 				{
 					caputure = true;
-					boardStatus[i] ^= GetBit(finalPos);
+					_boardStatus[i] ^= GetBit(finalPos);
 					break;
 				}
 			}
-			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
 			return true;
 		}
 		return false;
@@ -252,22 +279,23 @@ public class Board
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = PseudoLegalMove.King(c, boardStatus, initialPos);
+		List<int> moves = PseudoLegalMove.King(c, _boardStatus, initialPos);
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
-				if ((boardStatus[i] & GetBit(finalPos)) != 0)
+				if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 				{
 					caputure = true;
-					boardStatus[i] ^= GetBit(finalPos);
+					_boardStatus[i] ^= GetBit(finalPos);
 					break;
 				}
 			}
-			boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
 			return true;
 		}
 		return false;
 	}
+	
 }

@@ -13,8 +13,10 @@ public partial class BoardVisual : Node2D
 	[ExportCategory("Board Color")]
 	[Export] private Color _darkSquares = Colors.Black; //Colour of dark squares
 	[Export] private Color _lightSquares = Colors.White; //Colour of Light Squares
-	[Export] private Color _PathDarkSquare = Colors.DarkRed;
-	[Export] private Color _PathLightSquare = Colors.Red;
+	[Export] private Color _pathDarkSquare = Colors.DarkGreen;
+	[Export] private Color _pathLightSquare = Colors.Green;
+	[Export] private Color _attackDarkSqaure = Colors.DarkRed;
+	[Export] private Color _attackLighSquare = Colors.Red;
 	#endregion
 
 	
@@ -172,9 +174,9 @@ public partial class BoardVisual : Node2D
 				}
 				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(item);
 				if (sq.Modulate == _darkSquares)
-					sq.Modulate = _PathDarkSquare;
+					sq.Modulate = _pathDarkSquare;
 				else if (sq.Modulate == _lightSquares)
-					sq.Modulate = _PathLightSquare;
+					sq.Modulate = _pathLightSquare;
 			}
 		}
 	}
@@ -184,13 +186,32 @@ public partial class BoardVisual : Node2D
 		foreach (var item in _squareContainer.GetChildren())
 		{
 			
-			if ((item as MeshInstance2D).Modulate == _PathDarkSquare)
+			if ((item as MeshInstance2D).Modulate == _pathDarkSquare || 
+				    (item as MeshInstance2D).Modulate == _attackDarkSqaure)
 				(item as MeshInstance2D).Modulate = _darkSquares;
-			else if ((item as MeshInstance2D).Modulate == _PathLightSquare)
+			else if ((item as MeshInstance2D).Modulate == _pathLightSquare ||
+			         (item as MeshInstance2D).Modulate == _attackLighSquare)
 				(item as MeshInstance2D).Modulate = _lightSquares;
 		}
 	}
 
+	public void ShowAttacks()
+	{
+		ulong attacked = AttackBitboard.GetAttackBitBoard(Colour.WHITE,board.BoardStatus);
+
+		for (int i = 0; i < 64; ++i)
+		{
+			if ((attacked & (ulong)1 << i) != 0)
+			{
+				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
+				if (sq.Modulate == _darkSquares)
+					sq.Modulate = _pathDarkSquare;
+				else if (sq.Modulate == _lightSquares)
+					sq.Modulate = _pathLightSquare;
+			}
+		}
+	}
+	
 	#region Mapping Functions 
 	//Converts global coordinates to coordinates of the chess board
 	public Vector2I GlobalPositionToBoardPosition(Vector2 globalPos){
@@ -223,10 +244,15 @@ public partial class BoardVisual : Node2D
 
 	public override void _Process(double delta)
 	{
-		if (Input.IsActionJustPressed("ui_accept") || _moved)
+		if (_moved)
 		{
 			_moved = false;
 			SetBoard();
+		}
+
+		if (Input.IsActionJustPressed("ui_accept"))
+		{
+			ShowAttacks();
 		}
 	}
 }
