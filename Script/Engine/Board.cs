@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 //Todo: Migrate Checking Legal moves to PseudoLegalMoves Class.
 //Todo: Make bitboard of currently square currently under attack by opposition.
+
+//Todo: Implement translation of FEN to board positions.
 public class Board
 {
 
