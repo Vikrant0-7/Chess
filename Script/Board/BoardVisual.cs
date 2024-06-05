@@ -25,12 +25,15 @@ public partial class BoardVisual : Node2D
 	private Node2D _labelContainer;
 	private Node2D _squareContainer;
 	
-	const float size = 50f; //Size of One Square of Chess Board in Px
-
-	public Board board; //Actual Board
+	public bool showMoves = false;
+	public int showAttacks = 0;
 	
-	const bool _debugNumbering = true;
-	private bool _moved = false;
+	
+	//very important
+	private bool _moved = false; //variable is used to update board once a piece is moved
+	const float size = 50f; //Size of One Square of Chess Board in Px
+	public Board board; //Actual Board
+
 	
 	public override void _Ready()
 	{
@@ -53,28 +56,31 @@ public partial class BoardVisual : Node2D
 	//Generates an Chess Board with initial configuration
 	void Generate(){
 		for(int i = 0; i < 8; ++i){
-			for(int j = 0; j < 8; ++j){
+			for (int j = 0; j < 8; ++j)
+			{
 				MeshInstance2D mesh = _quad.Instantiate<MeshInstance2D>();
 				mesh.Modulate = _lightSquares;
-				if(i%2==0 && j%2==1 || i%2==1 && j%2==0){
+				if (i % 2 == 0 && j % 2 == 1 || i % 2 == 1 && j % 2 == 0)
+				{
 					mesh.Modulate = _darkSquares;
 				}
-				mesh.GlobalPosition = (_positionPlaceHolder.GlobalPosition.X + size/2 + size * j) * Vector2.Right + (_positionPlaceHolder.GlobalPosition.Y  + size/2 + size * i) * Vector2.Down;
-				if(_debugNumbering){
-					Label label = _text.Instantiate<Label>();
-					label.Text = (i*8+j).ToString();
-					label.GlobalPosition = mesh.GlobalPosition;
-					label.ZIndex = 100;
-					_labelContainer.CallDeferred("add_child",label);
-				}
-				_squareContainer.CallDeferred("add_child",mesh);
+
+				mesh.GlobalPosition = (_positionPlaceHolder.GlobalPosition.X + size / 2 + size * j) * Vector2.Right +
+				                      (_positionPlaceHolder.GlobalPosition.Y + size / 2 + size * i) * Vector2.Down;
+				Label label = _text.Instantiate<Label>();
+				label.Text = (i * 8 + j).ToString();
+				label.GlobalPosition = mesh.GlobalPosition;
+				label.ZIndex = 100;
+				_labelContainer.CallDeferred("add_child", label);
+
+				_squareContainer.CallDeferred("add_child", mesh);
 			}
 		}
 		board.InitialBoardConfig();
 		SetBoard();
 	}
 
-	public void SetBoard()
+	void SetBoard()
 	{
 		for (int i = 0; i < _pieceContainer.GetChildCount(); ++i)
 		{
@@ -150,6 +156,10 @@ public partial class BoardVisual : Node2D
 
 	public void ShowMoves(int pieceIndex, Vector2I initialPosition)
 	{
+		if (!showMoves)
+		{
+			return;
+		}
 		List<int> moves = null;
 		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
 		if (pieceIndex == 5 || pieceIndex == 11)
@@ -197,9 +207,9 @@ public partial class BoardVisual : Node2D
 		}
 	}
 
-	public void ShowAttacks()
+	void ShowAttacks()
 	{
-		ulong attacked = AttackBitboard.GetAttackBitBoard(Colour.WHITE,board.BoardStatus);
+		ulong attacked = AttackBitboard.GetAttackBitBoard(showAttacks == 1 ? Colour.WHITE : Colour.BLACK,board.BoardStatus);
 		GD.Print("Attacks: ", attacked);
 		for (int i = 0; i < 64; ++i)
 		{
@@ -243,18 +253,22 @@ public partial class BoardVisual : Node2D
 	}
 	#endregion
 
+	public void RefreshBoard()
+	{
+		Reset();
+		SetBoard();
+		if (showAttacks != 0)
+		{
+			ShowAttacks();
+		}
+	}
 
 	public override void _Process(double delta)
 	{
 		if (_moved)
 		{
 			_moved = false;
-			SetBoard();
-		}
-
-		if (Input.IsActionJustPressed("ui_accept"))
-		{
-			ShowAttacks();
+			RefreshBoard();
 		}
 	}
 }
