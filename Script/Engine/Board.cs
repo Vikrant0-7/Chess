@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 //Todo: Migrate Checking Legal moves to PseudoLegalMoves Class.
 //Todo: Make bitboard of currently square currently under attack by opposition.
+
+//Todo: Implement translation of FEN to board positions.
 public class Board
 {
 
@@ -273,49 +275,6 @@ public class Board
 			return true;
 		}
 		return false;
-	}
-
-
-	public List<int> LegalMoves(int pieceIdx, int pos, List<int> moves)
-	{
-		List<int> lastPlace = new List<int>(moves);
-		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-
-		foreach (var finalPos in moves)
-		{
-			ulong[] tmpBoardStatus = new ulong[12];
-			for (int i = 0; i < 12; ++i)
-			{
-				tmpBoardStatus[i] = _boardStatus[i];
-			}
-			
-			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
-			{
-				if ((tmpBoardStatus[i] & GetBit(finalPos)) != 0)
-				{
-					tmpBoardStatus[i] ^= GetBit(finalPos);
-					break;
-				}
-			}
-			tmpBoardStatus[pieceIdx] ^= (GetBit(pos) | GetBit(finalPos));
-			if (c == Colour.WHITE)
-			{
-				ulong a = AttackBitboard.GetAttackBitBoard(Colour.BLACK, tmpBoardStatus);
-				if ( (a & tmpBoardStatus[0]) != 0)
-				{
-					lastPlace.Remove(finalPos);
-				}
-			}
-			else
-			{
-				ulong a = AttackBitboard.GetAttackBitBoard(Colour.WHITE, tmpBoardStatus);
-				if ((a & tmpBoardStatus[6]) != 0)
-				{
-					lastPlace.Remove(finalPos);
-				}
-			}
-		}
-		return lastPlace;
 	}
 	
 }

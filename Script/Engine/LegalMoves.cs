@@ -30,13 +30,7 @@ public class LegalMoves
         board = b;
     }
 
-    static int BoardPositionToInt(Vector2I pos)
-    {
-        return pos.Y * 8 + pos.X;
-    }
-    
-    
-    public static List<int> Pawn(Colour colour, ulong[] boardState, ulong[] prevPawnState, int pos, bool attacks = false)
+    public static List<int> Pawn(Colour colour, ulong[] boardState, ulong[] prevPawnState, int pos)
     {
         List<int> @out = new List<int>();
         if (colour == Colour.WHITE)
@@ -49,53 +43,55 @@ public class LegalMoves
                 if (i > 5)
                     blackSquares |= boardState[i];
             }
+
             bool notBlocked = false;
-            if (!attacks)
-            {
-                //if pawn next Square is Free
-                if (pos >= 8 && (freeSquares & GetBit(pos - 8)) == 0)
-                {
-                    @out.Add(pos - 8);
-                    notBlocked = true;
-                }
 
-                if (pos >= 48) //pawn is moving two steps
+            //if pawn next Square is Free
+            if (pos >= 8 && (freeSquares & GetBit(pos - 8)) == 0)
+            {
+                @out.Add(pos - 8);
+                notBlocked = true;
+            }
+
+            if (pos >= 48) //pawn is moving two steps
+            {
+                if (notBlocked &&
+                    (freeSquares & GetBit(pos - 16)) == 0) //if pawn is notBlocked and position is free
                 {
-                    if (notBlocked &&
-                        (freeSquares & GetBit(pos - 16)) == 0) //if pawn is notBlocked and position is free
-                    {
-                        @out.Add(pos - 16);
-                    }
+                    @out.Add(pos - 16);
                 }
             }
 
-            if (!((pos+1) % 8 == 0)) //if can capture a blackPiece 
+
+            if (!((pos + 1) % 8 == 0)) //if can capture a blackPiece 
             {
-                if(attacks || (blackSquares & GetBit(pos - 7)) != 0)
-                    @out.Add(pos-7);                
+                if ((blackSquares & GetBit(pos - 7)) != 0)
+                    @out.Add(pos - 7);
             }
-            if ( !(pos % 8 == 0)) //if can capture a blackPiece 
+
+            if (!(pos % 8 == 0)) //if can capture a blackPiece 
             {
-                if(attacks || (blackSquares & GetBit(pos - 9)) != 0)
-                    @out.Add(pos-9);                
+                if ((blackSquares & GetBit(pos - 9)) != 0)
+                    @out.Add(pos - 9);
             }
-            
+
             //Unoptimised en passente' 
             if (pos >= 24 && pos <= 31)
             {
-               
+
                 if (pos > 24 && (boardState[11] & GetBit(pos - 1)) != 0)
                 {
                     if ((prevPawnState[11] & GetBit(pos - 16 - 1)) != 0)
                     {
-                        @out.Add(pos-9);  
+                        @out.Add(pos - 9);
                     }
                 }
+
                 if (pos < 31 && (boardState[11] & GetBit(pos + 1)) != 0)
                 {
                     if ((prevPawnState[11] & GetBit(pos - 16 + 1)) != 0)
                     {
-                        @out.Add(pos-7);  
+                        @out.Add(pos - 7);
                     }
                 }
 
@@ -112,153 +108,159 @@ public class LegalMoves
                     whiteSquares |= boardState[i];
             }
 
-            if (!attacks)
-            {
-                bool notBlocked = false;
-                //if pawn next Square is Free
-                if ((freeSquares & GetBit(pos + 8)) == 0)
-                {
-                    @out.Add(pos + 8);
-                    notBlocked = true;
-                }
 
-                if (pos <= 15) //pawn is moving two steps
+            bool notBlocked = false;
+            //if pawn next Square is Free
+            if ((freeSquares & GetBit(pos + 8)) == 0)
+            {
+                @out.Add(pos + 8);
+                notBlocked = true;
+            }
+
+            if (pos <= 15) //pawn is moving two steps
+            {
+                if (pos < 48 && notBlocked && (freeSquares & GetBit(pos + 16)) == 0) //if pawn is notBlocked
                 {
-                    if (pos < 48 && notBlocked && (freeSquares & GetBit(pos + 16)) == 0) //if pawn is notBlocked
-                    {
-                        @out.Add(pos + 16);
-                    }
+                    @out.Add(pos + 16);
                 }
             }
+
 
             if (!(pos % 8 == 0)) //if can capture a blackPiece 
             {
-                if(attacks || (whiteSquares & GetBit(pos + 7)) != 0)
-                    @out.Add(pos+7);                
+                if ((whiteSquares & GetBit(pos + 7)) != 0)
+                    @out.Add(pos + 7);
             }
-            if ( !((pos + 1) % 8 == 0)) //if can capture a blackPiece 
+
+            if (!((pos + 1) % 8 == 0)) //if can capture a blackPiece 
             {
-                if(attacks || (whiteSquares & GetBit(pos + 9)) != 0)
-                    @out.Add(pos+9);                
+                if ((whiteSquares & GetBit(pos + 9)) != 0)
+                    @out.Add(pos + 9);
             }
-            
+
             if (pos >= 32 && pos <= 39)
             {
-               
+
                 if (pos > 32 && (boardState[5] & GetBit(pos - 1)) != 0)
                 {
                     if ((prevPawnState[5] & GetBit(pos + 16 - 1)) != 0)
                     {
-                        @out.Add(pos+7);  
+                        @out.Add(pos + 7);
                     }
                 }
+
                 if (pos < 39 && (boardState[5] & GetBit(pos + 1)) != 0)
                 {
                     if ((prevPawnState[5] & GetBit(pos + 16 + 1)) != 0)
                     {
-                        @out.Add(pos+9);  
+                        @out.Add(pos + 9);
                     }
                 }
 
             }
         }
-        if(!attacks)
-            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 5, pos, @out);
-        return @out;
+
+        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 5, pos, boardState, @out);
     }
 
-    public static List<int> Knight(Colour colour, ulong[] boardState, int pos, bool attacks = false)
+    public static List<int> Knight(Colour colour, ulong[] boardState, int pos)
     {
         List<int> @out = new List<int>();
         ulong oppositeSquares = 0; //tells if given position is occupied by a black piece.
-        
+
         if (colour == Colour.WHITE)
         {
             for (int i = 0; i <= 5; ++i)
-            { 
+            {
                 oppositeSquares |= boardState[i];
             }
         }
         else
         {
             for (int i = 6; i < 12; ++i)
-            { 
+            {
                 oppositeSquares |= boardState[i];
             }
         }
+
         Vector2I position = IntToBoardPosition(pos);
-            if (position.X - 2 >= 0)
+        if (position.X - 2 >= 0)
+        {
+            if (position.Y - 1 >= 0)
             {
-                if (position.Y - 1 >= 0)
-                {
-                    int legalPosition = BoardPositionToInt(position.X - 2, position.Y - 1);
-                    if(attacks || (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
-                if (position.Y + 1 < 8)
-                {
-                    int legalPosition = BoardPositionToInt(position.X - 2, position.Y + 1);
-                    if(attacks || (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
+                int legalPosition = BoardPositionToInt(position.X - 2, position.Y - 1);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
             }
-            if (position.X + 2 < 8)
+
+            if (position.Y + 1 < 8)
             {
-                if (position.Y - 1 >= 0)
-                {
-                    int legalPosition = BoardPositionToInt(position.X + 2, position.Y - 1);
-                    if(attacks || (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
-                if (position.Y + 1 < 8)
-                {
-                    int legalPosition = BoardPositionToInt(position.X + 2, position.Y + 1);
-                    if(attacks || (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
+                int legalPosition = BoardPositionToInt(position.X - 2, position.Y + 1);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
             }
-            
-            if (position.Y - 2 >= 0)
+        }
+
+        if (position.X + 2 < 8)
+        {
+            if (position.Y - 1 >= 0)
             {
-                if (position.X - 1 >= 0)
-                {
-                    int legalPosition = BoardPositionToInt(position.X - 1, position.Y - 2);
-                    if(attacks || (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
-                if (position.X + 1 < 8)
-                {
-                    int legalPosition = BoardPositionToInt(position.X + 1, position.Y - 2);
-                    if(attacks|| (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
+                int legalPosition = BoardPositionToInt(position.X + 2, position.Y - 1);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
             }
-            if (position.Y + 2 < 8)
+
+            if (position.Y + 1 < 8)
             {
-                if (position.X - 1 >= 0)
-                {
-                    int legalPosition = BoardPositionToInt(position.X - 1, position.Y + 2);
-                    if(attacks|| (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
-                if (position.X + 1 < 8)
-                {
-                    int legalPosition = BoardPositionToInt(position.X + 1, position.Y + 2);
-                    if(attacks|| (oppositeSquares & GetBit(legalPosition)) == 0)
-                        @out.Add(legalPosition);
-                }
+                int legalPosition = BoardPositionToInt(position.X + 2, position.Y + 1);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
             }
-        if(!attacks)
-            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 4, pos, @out);
-        return @out;
+        }
+
+        if (position.Y - 2 >= 0)
+        {
+            if (position.X - 1 >= 0)
+            {
+                int legalPosition = BoardPositionToInt(position.X - 1, position.Y - 2);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
+            }
+
+            if (position.X + 1 < 8)
+            {
+                int legalPosition = BoardPositionToInt(position.X + 1, position.Y - 2);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
+            }
+        }
+
+        if (position.Y + 2 < 8)
+        {
+            if (position.X - 1 >= 0)
+            {
+                int legalPosition = BoardPositionToInt(position.X - 1, position.Y + 2);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
+            }
+
+            if (position.X + 1 < 8)
+            {
+                int legalPosition = BoardPositionToInt(position.X + 1, position.Y + 2);
+                if ((oppositeSquares & GetBit(legalPosition)) == 0)
+                    @out.Add(legalPosition);
+            }
+        }
+
+        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 4, pos, boardState, @out);
     }
 
-    public static List<int> Bishop(Colour colour, ulong[] boardState, int pos, bool attacks = false)
+    public static List<int> Bishop(Colour colour, ulong[] boardState, int pos)
     {
         List<int> @return = new List<int>();
         ulong freeSquares = 0; //if any bit is 0 after the for loop that means that position do not have any piece
         ulong oppositeSquares = 0; //tells if given position is occupied by a black piece.
-        
+
         if (colour == Colour.WHITE)
         {
             for (int i = 0; i < 12; ++i)
@@ -277,113 +279,104 @@ public class LegalMoves
                     oppositeSquares |= boardState[i];
             }
         }
+
         Vector2I position = IntToBoardPosition(pos);
-            int x = 1;
-            bool stopSearchLeft = false, stopSearchRight = false;
-            
-            for (int y = position.Y - 1; y >= 0; --y , ++x)
+        int x = 1;
+        bool stopSearchLeft = false, stopSearchRight = false;
+
+        for (int y = position.Y - 1; y >= 0; --y, ++x)
+        {
+            int possiblePos = BoardPositionToInt(position.X - x, y);
+            if (position.X - x < 0)
             {
-                int possiblePos = BoardPositionToInt(position.X - x, y);
-                if (position.X - x < 0)
-                {
-                    stopSearchLeft = true;
-                }
-                if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
-                {
-                    @return.Add(possiblePos);
-                }
-                else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
-                {
-                    @return.Add(possiblePos);
-                    stopSearchLeft = true;
-                }
-                else
-                {
-                    if (!stopSearchLeft && attacks)
-                    {
-                        @return.Add(possiblePos);
-                    }
-                    stopSearchLeft = true;
-                }
-                possiblePos = BoardPositionToInt(position.X + x, y);
-                if (position.X + x >= 8)
-                {
-                    stopSearchRight = true;
-                }
-                if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
-                {
-                    @return.Add(possiblePos);
-                }
-                else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
-                {
-                    @return.Add(possiblePos);
-                    stopSearchRight = true;
-                }
-                else
-                {
-                    if (!stopSearchRight && attacks)
-                    {
-                        @return.Add(possiblePos);
-                    }
-                    stopSearchRight = true;
-                }
+                stopSearchLeft = true;
             }
 
-            x = 1;
-            stopSearchLeft = false; stopSearchRight = false;
-            for (int y = position.Y + 1; y < 8; ++y , ++x)
+            if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                int possiblePos = BoardPositionToInt(position.X - x, y);
-                if (position.X - x < 0)
-                {
-                    stopSearchLeft = true;
-                }
-                if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
-                {
-                    @return.Add(possiblePos);
-                }
-                else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
-                {
-                    @return.Add(possiblePos);
-                    stopSearchLeft = true;
-                }
-                else
-                {
-                    if (!stopSearchLeft && attacks)
-                    {
-                        @return.Add(possiblePos);
-                    }
-                    stopSearchLeft = true;
-                }
-                possiblePos = BoardPositionToInt(position.X + x, y);
-                if (position.X + x >= 8)
-                {
-                    stopSearchRight = true;
-                }
-                if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
-                {
-                    @return.Add(possiblePos);
-                }
-                else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
-                {
-                    @return.Add(possiblePos);
-                    stopSearchRight = true;
-                }
-                else
-                {
-                    if (!stopSearchRight && attacks)
-                    {
-                        @return.Add(possiblePos);
-                    }
-                    stopSearchRight = true;
-                }
+                @return.Add(possiblePos);
             }
-        if(!attacks)
-            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 3, pos, @return);
-        return @return;
+            else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                @return.Add(possiblePos);
+                stopSearchLeft = true;
+            }
+            else
+            {
+                stopSearchLeft = true;
+            }
+
+            possiblePos = BoardPositionToInt(position.X + x, y);
+            if (position.X + x >= 8)
+            {
+                stopSearchRight = true;
+            }
+
+            if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
+            {
+                @return.Add(possiblePos);
+            }
+            else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                @return.Add(possiblePos);
+                stopSearchRight = true;
+            }
+            else
+            {
+                stopSearchRight = true;
+            }
+        }
+
+        x = 1;
+        stopSearchLeft = false;
+        stopSearchRight = false;
+        for (int y = position.Y + 1; y < 8; ++y, ++x)
+        {
+            int possiblePos = BoardPositionToInt(position.X - x, y);
+            if (position.X - x < 0)
+            {
+                stopSearchLeft = true;
+            }
+
+            if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
+            {
+                @return.Add(possiblePos);
+            }
+            else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                @return.Add(possiblePos);
+                stopSearchLeft = true;
+            }
+            else
+            {
+                stopSearchLeft = true;
+            }
+
+            possiblePos = BoardPositionToInt(position.X + x, y);
+            if (position.X + x >= 8)
+            {
+                stopSearchRight = true;
+            }
+
+            if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
+            {
+                @return.Add(possiblePos);
+            }
+            else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
+            {
+                @return.Add(possiblePos);
+                stopSearchRight = true;
+            }
+            else
+            {
+                stopSearchRight = true;
+            }
+        }
+
+        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 3, pos, boardState, @return);
     }
 
-    public static List<int> Rook(Colour colour, ulong[] boardState, int pos,  bool attacks = false)
+    public static List<int> Rook(Colour colour, ulong[] boardState, int pos)
     {
         ulong freeSquares = 0;
         ulong oppositeSquares = 0;
@@ -428,13 +421,10 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
                 break;
             }
         }
+
         for (int x = position.X + 1; x < 8; ++x)
         {
             int possiblePosition = BoardPositionToInt(x, position.Y);
@@ -449,16 +439,13 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
                 break;
             }
         }
+
         for (int y = position.Y - 1; y >= 0; --y)
         {
-            int possiblePosition = BoardPositionToInt(position.X,y);
+            int possiblePosition = BoardPositionToInt(position.X, y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
                 moves.Add(possiblePosition);
@@ -470,16 +457,13 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
                 break;
             }
         }
+
         for (int y = position.Y + 1; y < 8; ++y)
         {
-            int possiblePosition = BoardPositionToInt(position.X,y);
+            int possiblePosition = BoardPositionToInt(position.X, y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
                 moves.Add(possiblePosition);
@@ -491,19 +475,14 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
                 break;
             }
         }
-        if(!attacks)
-            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 2, pos, moves);
-        return moves;
+
+        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 2, pos, boardState, moves);
     }
 
-    public static List<int> Queen(Colour colour, ulong[] boardState, int pos, bool attacks = false)
+    public static List<int> Queen(Colour colour, ulong[] boardState, int pos)
     {
         ulong freeSquares = 0;
         ulong oppositeSquares = 0;
@@ -548,11 +527,6 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
-
                 break;
             }
         }
@@ -571,11 +545,6 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
-
                 break;
             }
         }
@@ -594,11 +563,6 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
-
                 break;
             }
         }
@@ -617,23 +581,18 @@ public class LegalMoves
             }
             else
             {
-                if (attacks)
-                {
-                    moves.Add(possiblePosition);
-                }
 
                 break;
             }
         }
 
-        Vector2I boardPosition = IntToBoardPosition(pos);
         int i1 = 1;
         bool stopSearchLeft = false, stopSearchRight = false;
 
-        for (int y = boardPosition.Y - 1; y >= 0; --y, ++i1)
+        for (int y = position.Y - 1; y >= 0; --y, ++i1)
         {
-            int possiblePos = BoardPositionToInt(boardPosition.X - i1, y);
-            if (boardPosition.X - i1 < 0)
+            int possiblePos = BoardPositionToInt(position.X - i1, y);
+            if (position.X - i1 < 0)
             {
                 stopSearchLeft = true;
             }
@@ -649,16 +608,11 @@ public class LegalMoves
             }
             else
             {
-                if (!stopSearchLeft && attacks)
-                {
-                    moves.Add(possiblePos);
-                }
-
                 stopSearchLeft = true;
             }
 
-            possiblePos = BoardPositionToInt(boardPosition.X + i1, y);
-            if (boardPosition.X + i1 >= 8)
+            possiblePos = BoardPositionToInt(position.X + i1, y);
+            if (position.X + i1 >= 8)
             {
                 stopSearchRight = true;
             }
@@ -674,11 +628,6 @@ public class LegalMoves
             }
             else
             {
-                if (!stopSearchRight && attacks)
-                {
-                    moves.Add(possiblePos);
-                }
-
                 stopSearchRight = true;
             }
         }
@@ -686,10 +635,10 @@ public class LegalMoves
         i1 = 1;
         stopSearchLeft = false;
         stopSearchRight = false;
-        for (int y = boardPosition.Y + 1; y < 8; ++y, ++i1)
+        for (int y = position.Y + 1; y < 8; ++y, ++i1)
         {
-            int possiblePos = BoardPositionToInt(boardPosition.X - i1, y);
-            if (boardPosition.X - i1 < 0)
+            int possiblePos = BoardPositionToInt(position.X - i1, y);
+            if (position.X - i1 < 0)
             {
                 stopSearchLeft = true;
             }
@@ -705,16 +654,11 @@ public class LegalMoves
             }
             else
             {
-                if (!stopSearchLeft && attacks)
-                {
-                    moves.Add(possiblePos);
-                }
-
                 stopSearchLeft = true;
             }
 
-            possiblePos = BoardPositionToInt(boardPosition.X + i1, y);
-            if (boardPosition.X + i1 >= 8)
+            possiblePos = BoardPositionToInt(position.X + i1, y);
+            if (position.X + i1 >= 8)
             {
                 stopSearchRight = true;
             }
@@ -730,21 +674,14 @@ public class LegalMoves
             }
             else
             {
-                if (!stopSearchRight && attacks)
-                {
-                    moves.Add(possiblePos);
-                }
-
                 stopSearchRight = true;
             }
         }
 
-        if (!attacks)
-            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6) + 1, pos, moves);
-        return moves;
+        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 1, pos, boardState, moves);
     }
 
-    public static List<int> King(Colour colour, ulong[] boardState, int pos,  bool attacks = false)
+    public static List<int> King(Colour colour, ulong[] boardState, int pos)
     {
         ulong sameSquares = 0;
         List<int> moves = new List<int>();
@@ -776,21 +713,60 @@ public class LegalMoves
         {
             for (int x = postion.X - 1; x < 8 && x <= postion.X + 1; ++x)
             {
-                if(x < 0 || y < 0)
+                if (x < 0 || y < 0)
                     continue;
-                if(x == postion.X && y == postion.Y)
+                if (x == postion.X && y == postion.Y)
                     continue;
                 int possiblePosition = BoardPositionToInt(x, y);
-                if((sameSquares & GetBit(possiblePosition)) == 0)
+                if ((sameSquares & GetBit(possiblePosition)) == 0)
                     moves.Add(possiblePosition);
-                else if(attacks)
-                    moves.Add(possiblePosition);
+
             }
         }
 
-        if(!attacks)
-            return board.LegalMoves((colour == Colour.WHITE ? 0 : 6), pos, moves);
-        return moves;
+        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6), pos, boardState, moves);
     }
 
+    
+    static List<int> RemoveIllegalMoves(int pieceIdx, int pos, ulong[] boardStatus, List<int> moves)
+    {
+        List<int> lastPlace = new List<int>(moves);
+        Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
+
+        foreach (var finalPos in moves)
+        {
+            ulong[] tmpBoardStatus = new ulong[12];
+            for (int i = 0; i < 12; ++i)
+            {
+                tmpBoardStatus[i] = boardStatus[i];
+            }
+			
+            for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+            {
+                if ((tmpBoardStatus[i] & GetBit(finalPos)) != 0)
+                {
+                    tmpBoardStatus[i] ^= GetBit(finalPos);
+                    break;
+                }
+            }
+            tmpBoardStatus[pieceIdx] ^= (GetBit(pos) | GetBit(finalPos));
+            if (c == Colour.WHITE)
+            {
+                ulong a = AttackBitboard.GetAttackBitBoard(Colour.BLACK, tmpBoardStatus);
+                if ( (a & tmpBoardStatus[0]) != 0)
+                {
+                    lastPlace.Remove(finalPos);
+                }
+            }
+            else
+            {
+                ulong a = AttackBitboard.GetAttackBitBoard(Colour.WHITE, tmpBoardStatus);
+                if ((a & tmpBoardStatus[6]) != 0)
+                {
+                    lastPlace.Remove(finalPos);
+                }
+            }
+        }
+        return lastPlace;
+    }
 }
