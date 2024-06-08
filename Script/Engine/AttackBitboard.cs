@@ -485,7 +485,7 @@ public class AttackBitboard
         {
             int possiblePosition = BoardPositionToInt(position.X, y);
             moves.Add(possiblePosition);
-            if ((freeSquares & GetBit(possiblePosition)) == 0)
+            if ((freeSquares & GetBit(possiblePosition)) != 0)
             {
                 break;
             }
@@ -543,7 +543,7 @@ public class AttackBitboard
         {
             int possiblePosition = BoardPositionToInt(position.X, y);
             moves.Add(possiblePosition);
-            if ((freeSquares & GetBit(possiblePosition)) == 0)
+            if ((freeSquares & GetBit(possiblePosition)) != 0)
             {
                 break;
             }

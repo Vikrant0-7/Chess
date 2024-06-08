@@ -74,7 +74,7 @@ public partial class Piece : Node2D
 				Vector2I finalPos = _boardVisual.GlobalPositionToBoardPosition(GlobalPosition);
 				
 				_boardVisual.UpdateBoard((int)colourType, _boardPosition, finalPos);
-				_boardVisual.Reset();
+				_boardVisual.ResetColors();
 			}
 		}
 		

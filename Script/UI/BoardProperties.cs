@@ -14,6 +14,7 @@ public partial class BoardProperties : VBoxContainer
 		GetNode<CheckButton>("Labels/CheckButton").Toggled += (on) => _OnLabelsToggled(on);
 		GetNode<OptionButton>("Attacks/OptionButton").ItemSelected += (what) => _OnAttacksItemSelected(what);
 		GetNode<Button>("Refresh").Pressed += () => _OnRefreshBoardPressed();
+		GetNode<Button>("Reset").Pressed += () => _OnResetBoardPressed();
 	}
 
 	void _OnMovesToggled(bool toggled)
@@ -46,5 +47,10 @@ public partial class BoardProperties : VBoxContainer
 	void _OnRefreshBoardPressed()
 	{
 		_visual.RefreshBoard();
+	}
+
+	void _OnResetBoardPressed()
+	{
+		_visual.Reset();
 	}
 }

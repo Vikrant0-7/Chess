@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://b4bshy74cjsdq"]
+[gd_scene load_steps=13 format=3 uid="uid://b4bshy74cjsdq"]
 
 [ext_resource type="Script" path="res://Script/Board/BoardVisual.cs" id="1_6qg82"]
 [ext_resource type="PackedScene" uid="uid://d3ddry3idf6eb" path="res://Assets/square.res" id="2_w26xg"]
@@ -6,6 +6,9 @@
 [ext_resource type="PackedScene" uid="uid://bt7nroqsewdq4" path="res://Assets/piece.res" id="4_7x6rc"]
 [ext_resource type="FontFile" uid="uid://lpguj7gpj4sf" path="res://Fonts/Ubuntu-Regular.ttf" id="5_c8x7i"]
 [ext_resource type="Script" path="res://Script/UI/BoardProperties.cs" id="6_s58nj"]
+[ext_resource type="Texture2D" uid="uid://cvm2bhn7ds2w7" path="res://sprites/wk.svg" id="7_atdpb"]
+[ext_resource type="Script" path="res://Script/UI/Turn.cs" id="7_k0o7r"]
+[ext_resource type="Texture2D" uid="uid://dfej2dww7j06l" path="res://sprites/bk.svg" id="9_ohx4l"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_5vden"]
 
@@ -18,6 +21,9 @@ OptionButton/font_sizes/font_size = 15
 OptionButton/fonts/font = ExtResource("5_c8x7i")
 VSeparator/constants/separation = 8
 VSeparator/styles/separator = SubResource("StyleBoxEmpty_5vden")
+
+[sub_resource type="QuadMesh" id="QuadMesh_jiq02"]
+size = Vector2(400, 400)
 
 [node name="Chess Board" type="Node2D"]
 position = Vector2(-2, -1)
@@ -59,8 +65,8 @@ theme = SubResource("Theme_yust3")
 layout_mode = 2
 offset_left = 640.0
 offset_top = 64.0
-offset_right = 775.0
-offset_bottom = 141.0
+offset_right = 852.0
+offset_bottom = 211.0
 script = ExtResource("6_s58nj")
 board = NodePath("../../..")
 
@@ -116,3 +122,34 @@ popup/item_2/id = 2
 [node name="Refresh" type="Button" parent="CanvasLayer/Control/Debug"]
 layout_mode = 2
 text = "Refresh Board"
+
+[node name="Reset" type="Button" parent="CanvasLayer/Control/Debug"]
+layout_mode = 2
+text = "Reset Board"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control"]
+layout_mode = 2
+offset_left = 64.0
+offset_top = 512.0
+offset_right = 464.0
+offset_bottom = 612.0
+alignment = 1
+script = ExtResource("7_k0o7r")
+_white = ExtResource("7_atdpb")
+_black = ExtResource("9_ohx4l")
+_boardPath = NodePath("../../..")
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 35
+text = "Turn"
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("7_atdpb")
+stretch_mode = 3
+
+[node name="MeshInstance2D" type="MeshInstance2D" parent="."]
+visible = false
+position = Vector2(266, 265)
+mesh = SubResource("QuadMesh_jiq02")

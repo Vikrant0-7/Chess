@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+//Todo: Add ability to set position on board by dragging and dropping pieces.
 public partial class BoardVisual : Node2D
 {
 	#region Exported Variables
@@ -25,21 +26,20 @@ public partial class BoardVisual : Node2D
 	private Node2D _labelContainer;
 	private Node2D _squareContainer;
 	
-	public bool showMoves = false;
-	public int showAttacks = 0;
-	
-	
 	//very important
 	private bool _moved = false; //variable is used to update board once a piece is moved
 	const float size = 50f; //Size of One Square of Chess Board in Px
-	public Board board; //Actual Board
+	Board _board; //Actual Board
 
+	public bool showMoves = false;
+	public int showAttacks = 0;
+	public Board board => _board;
 	
 	public override void _Ready()
 	{
-		board = new Board();
+		_board = new Board();
 		
-		LegalMoves.Init(board);
+		LegalMoves.Init(_board);
 		
 		_positionPlaceHolder = GetNode<Marker2D>("Marker");
 		_pieceContainer = GetNode<Node2D>("Marker/Piece");
@@ -66,7 +66,7 @@ public partial class BoardVisual : Node2D
 				}
 
 				mesh.GlobalPosition = (_positionPlaceHolder.GlobalPosition.X + size / 2 + size * j) * Vector2.Right +
-				                      (_positionPlaceHolder.GlobalPosition.Y + size / 2 + size * i) * Vector2.Down;
+									  (_positionPlaceHolder.GlobalPosition.Y + size / 2 + size * i) * Vector2.Down;
 				Label label = _text.Instantiate<Label>();
 				label.Text = (i * 8 + j).ToString();
 				label.GlobalPosition = mesh.GlobalPosition;
@@ -76,7 +76,7 @@ public partial class BoardVisual : Node2D
 				_squareContainer.CallDeferred("add_child", mesh);
 			}
 		}
-		board.InitialBoardConfig();
+		_board.InitialBoardConfig();
 		SetBoard();
 	}
 
@@ -93,51 +93,51 @@ public partial class BoardVisual : Node2D
 			Piece piece = _pieceInstance.Instantiate<Piece>();
 			piece.GlobalPosition = worldPosition;
 
-			if(board.GetPiece((int)ColourType.WHITE_KING,i)){
+			if(_board.GetPiece((int)ColourType.WHITE_KING,i)){
 				piece.Init(ColourType.WHITE_KING, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.WHITE_QUEEN,i)){
+			else if(_board.GetPiece((int)ColourType.WHITE_QUEEN,i)){
 				piece.Init(ColourType.WHITE_QUEEN, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.WHITE_ROOK,i)){
+			else if(_board.GetPiece((int)ColourType.WHITE_ROOK,i)){
 				piece.Init(ColourType.WHITE_ROOK, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.WHITE_BISHOP,i)){
+			else if(_board.GetPiece((int)ColourType.WHITE_BISHOP,i)){
 				piece.Init(ColourType.WHITE_BISHOP, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.WHITE_KNIGHT,i)){
+			else if(_board.GetPiece((int)ColourType.WHITE_KNIGHT,i)){
 				piece.Init(ColourType.WHITE_KNIGHT, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.WHITE_PAWN,i)){
+			else if(_board.GetPiece((int)ColourType.WHITE_PAWN,i)){
 				piece.Init(ColourType.WHITE_PAWN, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.BLACK_KING,i)){
+			else if(_board.GetPiece((int)ColourType.BLACK_KING,i)){
 				piece.Init(ColourType.BLACK_KING, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.BLACK_QUEEN,i)){
+			else if(_board.GetPiece((int)ColourType.BLACK_QUEEN,i)){
 				piece.Init(ColourType.BLACK_QUEEN, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.BLACK_ROOK,i)){
+			else if(_board.GetPiece((int)ColourType.BLACK_ROOK,i)){
 				piece.Init(ColourType.BLACK_ROOK, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.BLACK_BISHOP,i)){
+			else if(_board.GetPiece((int)ColourType.BLACK_BISHOP,i)){
 				piece.Init(ColourType.BLACK_BISHOP, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.BLACK_KNIGHT,i)){
+			else if(_board.GetPiece((int)ColourType.BLACK_KNIGHT,i)){
 				piece.Init(ColourType.BLACK_KNIGHT, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
-			else if(board.GetPiece((int)ColourType.BLACK_PAWN,i)){
+			else if(_board.GetPiece((int)ColourType.BLACK_PAWN,i)){
 				piece.Init(ColourType.BLACK_PAWN, IntToBoardPosition(i), this);
 				_pieceContainer.CallDeferred("add_child",piece);
 			}
@@ -148,7 +148,7 @@ public partial class BoardVisual : Node2D
 	{
 		bool capture = false;
 		bool moveValid = false;
-		moveValid = board.Move(pieceIndex, BoardPositionToInt(initialPosition), 
+		moveValid = _board.Move(pieceIndex, BoardPositionToInt(initialPosition), 
 			BoardPositionToInt(finalPosition), out capture);
 		_moved = true;
 		return moveValid;
@@ -156,24 +156,24 @@ public partial class BoardVisual : Node2D
 
 	public void ShowMoves(int pieceIndex, Vector2I initialPosition)
 	{
-		if (!showMoves)
+		if (!showMoves || (_board.WhiteTurn && pieceIndex > 5) || (!_board.WhiteTurn && pieceIndex <= 5))
 		{
 			return;
 		}
 		List<int> moves = null;
 		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
 		if (pieceIndex == 5 || pieceIndex == 11)
-			moves = LegalMoves.Pawn(c, board.BoardStatus, board.BoardSnapshot, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.BoardSnapshot, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 4 || pieceIndex == 10)
-			moves = LegalMoves.Knight(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Knight(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 3 || pieceIndex == 9)
-			moves = LegalMoves.Bishop(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Bishop(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 2 || pieceIndex == 8)
-			moves = LegalMoves.Rook(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Rook(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 1 || pieceIndex == 7)
-			moves = LegalMoves.Queen(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Queen(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 0 || pieceIndex == 6)
-			moves = LegalMoves.King(c, board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.King(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
 		
 		if (moves != null)
 		{
@@ -193,23 +193,23 @@ public partial class BoardVisual : Node2D
 		}
 	}
 
-	public void Reset()
+	public void ResetColors()
 	{
 		foreach (var item in _squareContainer.GetChildren())
 		{
 			
 			if ((item as MeshInstance2D).Modulate == _pathDarkSquare || 
-				    (item as MeshInstance2D).Modulate == _attackDarkSqaure)
+					(item as MeshInstance2D).Modulate == _attackDarkSqaure)
 				(item as MeshInstance2D).Modulate = _darkSquares;
 			else if ((item as MeshInstance2D).Modulate == _pathLightSquare ||
-			         (item as MeshInstance2D).Modulate == _attackLighSquare)
+					 (item as MeshInstance2D).Modulate == _attackLighSquare)
 				(item as MeshInstance2D).Modulate = _lightSquares;
 		}
 	}
 
 	void ShowAttacks()
 	{
-		ulong attacked = AttackBitboard.GetAttackBitBoard(showAttacks == 1 ? Colour.WHITE : Colour.BLACK,board.BoardStatus);
+		ulong attacked = AttackBitboard.GetAttackBitBoard(showAttacks == 1 ? Colour.WHITE : Colour.BLACK,_board.BoardStatus);
 		GD.Print("Attacks: ", attacked);
 		for (int i = 0; i < 64; ++i)
 		{
@@ -222,6 +222,23 @@ public partial class BoardVisual : Node2D
 					sq.Modulate = _attackLighSquare;
 			}
 		}
+	}
+	
+	public void RefreshBoard()
+	{
+		ResetColors();
+		SetBoard();
+		if (showAttacks != 0)
+		{
+			ShowAttacks();
+		}
+	}
+
+	public void Reset()
+	{
+		board.InitialBoardConfig();
+		RefreshBoard();
+		SetBoard();
 	}
 	
 	#region Mapping Functions 
@@ -253,15 +270,6 @@ public partial class BoardVisual : Node2D
 	}
 	#endregion
 
-	public void RefreshBoard()
-	{
-		Reset();
-		SetBoard();
-		if (showAttacks != 0)
-		{
-			ShowAttacks();
-		}
-	}
 
 	public override void _Process(double delta)
 	{
