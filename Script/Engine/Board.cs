@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+//Todo: Add check for mate condition.
 //Todo: Implement translation of FEN to board positions.
 public class Board
 {
@@ -9,7 +10,12 @@ public class Board
 	private ulong[] _boardSnapshot;
 
 	private bool _whiteTurn = true;
-
+	
+	private bool[] _whiteCanCastle;
+	private bool[] _blackCanCastle;
+	// 0 -> Queen Side Castle
+	// 1 -> King Side Castle
+	
 	public ulong[] BoardSnapshot => _boardSnapshot;
 	public ulong[] BoardStatus => _boardStatus;
 	public bool WhiteTurn => _whiteTurn;
@@ -17,6 +23,8 @@ public class Board
 	public Board(){
 		_boardStatus = new ulong[12];
 		_boardSnapshot = new ulong[12];
+		_whiteCanCastle = new bool[2];
+		_blackCanCastle = new bool[2];
 	}
 
 	ulong GetBit(int bit){
@@ -46,8 +54,25 @@ public class Board
 		}
 
 		_whiteTurn = true;
+
+		_whiteCanCastle[0] = true;
+		_whiteCanCastle[1] = true;
+		_blackCanCastle[0] = true;
+		_blackCanCastle[1] = true;
 		
 		GetSnapshot();
+	}
+
+	public bool[] CanCastle(int pieceIndex)
+	{
+		if (pieceIndex <= 5)
+		{
+			return _whiteCanCastle;
+		}
+		else
+		{
+			return _blackCanCastle;
+		}
 	}
 
 	private void GetSnapshot()
@@ -97,11 +122,39 @@ public class Board
 		else
 		{
 			valid =  MoveKing(pieceIdx, initialPos, finalPos, out caputure);
+			if (valid && pieceIdx == 0)
+			{
+				_whiteCanCastle[0] = false;
+				_whiteCanCastle[1] = false;
+			}
+			else if(valid)
+			{
+				_blackCanCastle[0] = false;
+				_whiteCanCastle[1] = false;
+			}
 		}
 
 		if (valid)
+		{
 			_whiteTurn = !_whiteTurn;
-		
+			
+			/*
+			 * If rook has been captured or moved even once, their respective variable will become false and will remain
+			 * so till board is reset, ensuring castling can only be done when rook is not yet moved.
+			 */
+			
+			if (_whiteCanCastle[0] && (_boardStatus[2] & GetBit(56)) == 0)
+				_whiteCanCastle[0] = false;
+			if (_whiteCanCastle[1] && (_boardStatus[2] & GetBit(63)) == 0)
+				_whiteCanCastle[1] = false;
+			
+			if (_blackCanCastle[0] && (_boardStatus[8] & GetBit(0)) == 0)
+				_blackCanCastle[0] = false;
+			if (_blackCanCastle[1] && (_boardStatus[8] & GetBit(7)) == 0)
+				_blackCanCastle[1] = false;
+			
+		}
+
 		return valid;
 	}
 
@@ -201,25 +254,43 @@ public class Board
 		return false;
 	}
 	
-	//Todo: Add code to handle castling
 	bool MoveKing(int pieceIdx, int initialPos, int finalPos, out bool caputure)
 	{
 		caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = global::LegalMoves.King(c, _boardStatus, initialPos);
+		List<int> moves = global::LegalMoves.King(c, _boardStatus, initialPos, CanCastle(pieceIdx));
+		
 		if (moves.Contains(finalPos))
 		{
 			GetSnapshot();
-			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+
+			if (Mathf.Abs(finalPos - initialPos) == 2) //king is castling
 			{
-				if ((_boardStatus[i] & GetBit(finalPos)) != 0)
+				_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+				if (finalPos == initialPos - 2) //king is castling on queen side
 				{
-					caputure = true;
-					_boardStatus[i] ^= GetBit(finalPos);
-					break;
+					_boardStatus[pieceIdx + 2] ^= (GetBit(initialPos - 4) | GetBit(finalPos + 1));
+				}
+				else
+				{
+					_boardStatus[pieceIdx + 2] ^= (GetBit(initialPos + 3) | GetBit(finalPos - 1));
 				}
 			}
-			_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			else
+			{
+				for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+				{
+					if ((_boardStatus[i] & GetBit(finalPos)) != 0)
+					{
+						caputure = true;
+						_boardStatus[i] ^= GetBit(finalPos);
+						break;
+					}
+				}
+
+				_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
+			}
+
 			return true;
 		}
 		return false;

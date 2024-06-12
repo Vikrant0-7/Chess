@@ -39,8 +39,6 @@ public partial class BoardVisual : Node2D
 	{
 		_board = new Board();
 		
-		LegalMoves.Init(_board);
-		
 		_positionPlaceHolder = GetNode<Marker2D>("Marker");
 		_pieceContainer = GetNode<Node2D>("Marker/Piece");
 		_labelContainer = GetNode<Node2D>("Marker/Labels");
@@ -173,7 +171,7 @@ public partial class BoardVisual : Node2D
 		if(pieceIndex == 1 || pieceIndex == 7)
 			moves = LegalMoves.Queen(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 0 || pieceIndex == 6)
-			moves = LegalMoves.King(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.King(c, _board.BoardStatus, BoardPositionToInt(initialPosition), board.CanCastle(pieceIndex));
 		
 		if (moves != null)
 		{

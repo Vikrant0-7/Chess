@@ -7,10 +7,10 @@ using System.Collections.Generic;
  * and see if king can be captured, if it can it is illegal.
  */
 
-//Todo: Add support for castling
+//Todo: Run Tests to make sure that moves generated are actually legal.
+
 public class LegalMoves
 {
-    private static Board board;
     private static bool _debug = true;
     static 	ulong GetBit(int bit){
         return (ulong)1 << (bit);
@@ -23,11 +23,6 @@ public class LegalMoves
     static int BoardPositionToInt(int x, int y)
     {
         return y * 8 + x;
-    }
-
-    public static void Init(Board b)
-    {
-        board = b;
     }
 
     public static List<int> Pawn(Colour colour, ulong[] boardState, ulong[] prevPawnState, int pos)
@@ -681,7 +676,7 @@ public class LegalMoves
         return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 1, pos, boardState, moves);
     }
 
-    public static List<int> King(Colour colour, ulong[] boardState, int pos)
+    public static List<int> King(Colour colour, ulong[] boardState, int pos, bool[] canCastle)
     {
         ulong sameSquares = 0;
         List<int> moves = new List<int>();
@@ -724,6 +719,11 @@ public class LegalMoves
             }
         }
 
+        if (canCastle[0])
+            moves.Add(pos - 2);
+        if (canCastle[1])
+            moves.Add(pos + 2);
+
         return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6), pos, boardState, moves);
     }
 
@@ -732,30 +732,67 @@ public class LegalMoves
     {
         List<int> lastPlace = new List<int>(moves);
         Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-
-        foreach (var finalPos in moves)
+        int upper = moves.Count;
+        
+        if (pieceIdx % 6 == 0) //check if castling can be done.
         {
-            ulong[] tmpBoardStatus = new ulong[12];
+            ulong a = AttackBitboard.GetAttackBitBoard((pieceIdx < 6) ? Colour.BLACK : Colour.WHITE, boardStatus);
+            ulong free = 0;
             for (int i = 0; i < 12; ++i)
             {
-                tmpBoardStatus[i] = boardStatus[i];
+                free |= boardStatus[i];
+            }
+            if (moves.Contains(pos + 2)) //king side castling
+            {
+                if ((free & (GetBit(pos + 1) | GetBit(pos + 2))) != 0)
+                {
+                    lastPlace.Remove(pos + 2);
+                }
+                //king can not castle if it is under check or squares it will pass through to castle are under attack
+                else if ((a & (GetBit(pos) | GetBit(pos + 1) | GetBit(pos + 2))) != 0)
+                {
+                    lastPlace.Remove(pos + 2);
+                }
+
+                --upper;
+            }
+            if (moves.Contains(pos - 2)) //queen side castling
+            {
+                if ((free & (GetBit(pos - 1) | GetBit(pos - 2) | GetBit(pos - 3))) != 0)
+                {
+                    lastPlace.Remove(pos - 2);
+                }
+                else if ((a & (GetBit(pos) | GetBit(pos - 1) | GetBit(pos - 2))) != 0)
+                {
+                    lastPlace.Remove(pos - 2);
+                }
+                --upper;
+            }
+        }
+
+        for (int i = 0; i < upper; i++)
+        {
+            ulong[] tmpBoardStatus = new ulong[12];
+            for (int j = 0; j < 12; ++j)
+            {
+                tmpBoardStatus[j] = boardStatus[j];
             }
 			
-            for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
+            for (int j = (c == Colour.BLACK ? 0 : 6); j < (c == Colour.BLACK ? 6 : 12); ++j)
             {
-                if ((tmpBoardStatus[i] & GetBit(finalPos)) != 0)
+                if ((tmpBoardStatus[j] & GetBit(moves[i])) != 0)
                 {
-                    tmpBoardStatus[i] ^= GetBit(finalPos);
+                    tmpBoardStatus[j] ^= GetBit(moves[i]);
                     break;
                 }
             }
-            tmpBoardStatus[pieceIdx] ^= (GetBit(pos) | GetBit(finalPos));
+            tmpBoardStatus[pieceIdx] ^= (GetBit(pos) | GetBit(moves[i]));
             if (c == Colour.WHITE)
             {
                 ulong a = AttackBitboard.GetAttackBitBoard(Colour.BLACK, tmpBoardStatus);
                 if ( (a & tmpBoardStatus[0]) != 0)
                 {
-                    lastPlace.Remove(finalPos);
+                    lastPlace.Remove(moves[i]);
                 }
             }
             else
@@ -763,7 +800,7 @@ public class LegalMoves
                 ulong a = AttackBitboard.GetAttackBitBoard(Colour.WHITE, tmpBoardStatus);
                 if ((a & tmpBoardStatus[6]) != 0)
                 {
-                    lastPlace.Remove(finalPos);
+                    lastPlace.Remove(moves[i]);
                 }
             }
         }
