@@ -25,7 +25,7 @@ public class LegalMoves
         return y * 8 + x;
     }
 
-    public static List<int> Pawn(Colour colour, ulong[] boardState, ulong[] prevPawnState, int pos)
+    public static List<int> Pawn(Colour colour, ulong[] boardState, int enPassantPosition, int pos)
     {
         List<int> @out = new List<int>();
         if (colour == Colour.WHITE)
@@ -62,34 +62,16 @@ public class LegalMoves
             {
                 if ((blackSquares & GetBit(pos - 7)) != 0)
                     @out.Add(pos - 7);
+                if (enPassantPosition == pos - 7 && (freeSquares & GetBit(pos - 7)) == 0)
+                    @out.Add(pos - 7);
             }
 
             if (!(pos % 8 == 0)) //if can capture a blackPiece 
             {
                 if ((blackSquares & GetBit(pos - 9)) != 0)
                     @out.Add(pos - 9);
-            }
-
-            //Unoptimised en passente' 
-            if (pos >= 24 && pos <= 31)
-            {
-
-                if (pos > 24 && (boardState[11] & GetBit(pos - 1)) != 0)
-                {
-                    if ((prevPawnState[11] & GetBit(pos - 16 - 1)) != 0)
-                    {
-                        @out.Add(pos - 9);
-                    }
-                }
-
-                if (pos < 31 && (boardState[11] & GetBit(pos + 1)) != 0)
-                {
-                    if ((prevPawnState[11] & GetBit(pos - 16 + 1)) != 0)
-                    {
-                        @out.Add(pos - 7);
-                    }
-                }
-
+                if (enPassantPosition == pos - 9 && (freeSquares & GetBit(pos - 9)) == 0)
+                    @out.Add(pos - 9);
             }
         }
         else
@@ -125,33 +107,16 @@ public class LegalMoves
             {
                 if ((whiteSquares & GetBit(pos + 7)) != 0)
                     @out.Add(pos + 7);
+                if (enPassantPosition == pos + 7 && (freeSquares & GetBit(pos + 7)) == 0)
+                    @out.Add(pos + 7);
             }
 
             if (!((pos + 1) % 8 == 0)) //if can capture a blackPiece 
             {
                 if ((whiteSquares & GetBit(pos + 9)) != 0)
                     @out.Add(pos + 9);
-            }
-
-            if (pos >= 32 && pos <= 39)
-            {
-
-                if (pos > 32 && (boardState[5] & GetBit(pos - 1)) != 0)
-                {
-                    if ((prevPawnState[5] & GetBit(pos + 16 - 1)) != 0)
-                    {
-                        @out.Add(pos + 7);
-                    }
-                }
-
-                if (pos < 39 && (boardState[5] & GetBit(pos + 1)) != 0)
-                {
-                    if ((prevPawnState[5] & GetBit(pos + 16 + 1)) != 0)
-                    {
-                        @out.Add(pos + 9);
-                    }
-                }
-
+                if (enPassantPosition == pos + 9 && (freeSquares & GetBit(pos + 9)) == 0)
+                    @out.Add(pos + 9);
             }
         }
 

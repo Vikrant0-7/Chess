@@ -19,6 +19,8 @@ public partial class UISetBoard : VBoxContainer
     
     public override void _Ready()
     {
+        _textureRect = GetNode<TextureRect>("texture");
+
         SetType(-1);
         GetNode<Button>("%k").Pressed += () => SetType(0);
         GetNode<Button>("%q").Pressed += () => SetType(1);
@@ -50,7 +52,6 @@ public partial class UISetBoard : VBoxContainer
             GetNode<CheckBox>("%bck")
         };
 
-        _textureRect = GetNode<TextureRect>("texture");
     }
 
     void SetType(int type)

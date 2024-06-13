@@ -4,21 +4,26 @@ using System.Collections.Generic;
 
 //Todo: Add check for mate condition.
 //Todo: Implement translation of FEN to board positions.
+//Todo: Migrate moves to Move class.
+//Todo: Handle Pawn Promotions
 public class Board
 {
 	private ulong[] _boardStatus;
-	private ulong[] _boardSnapshot;
-
+	private int _enPassantPosition;
+    
 	private bool _whiteTurn = true;
 	
 	private bool[] _whiteCanCastle;
 	private bool[] _blackCanCastle;
 	// 0 -> Queen Side Castle
 	// 1 -> King Side Castle
+	
 	private Stack<Move> _movesMade;
 	private MoveGenerator _moveGenerator;
+	private int _halfMoves;
+	private int _fullMoves;
 	
-	public ulong[] BoardSnapshot => _boardSnapshot;
+	public int EnPassantPosition => _enPassantPosition;
 	public ulong[] BoardStatus => _boardStatus;
 
 	public bool WhiteTurn
@@ -29,7 +34,8 @@ public class Board
 	
 	public Board(){
 		_boardStatus = new ulong[12];
-		_boardSnapshot = new ulong[12];
+		_enPassantPosition = -1;
+		_halfMoves = _fullMoves = 0;
 		_whiteCanCastle = new bool[2];
 		_blackCanCastle = new bool[2];
 		_movesMade = new Stack<Move>();
@@ -41,11 +47,26 @@ public class Board
 	{
 		bool caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = global::LegalMoves.Pawn(c, _boardStatus, _boardSnapshot, initialPos);
+		List<int> moves = global::LegalMoves.Pawn(c, _boardStatus, _enPassantPosition, initialPos);
 
 		if (moves.Contains(finalPos))
 		{
-			GetSnapshot();
+			//Pawn has moved 2 places then, square just behind is _enPassantPosition
+			if (Mathf.Abs(initialPos - finalPos) == 16)
+			{
+				if (c == Colour.WHITE)
+				{
+					_enPassantPosition = finalPos + 8;
+				}
+				else
+				{
+					_enPassantPosition = finalPos - 8;
+				}
+			}
+			else //pawn has moves 1 step.
+			{ 
+				_enPassantPosition = -1;
+			}
 			//if piece is moving diagonally the it is capturing some other piece
 			/*
 			 * For white 1 step ahead is initialPos - 8, thus initialPos - 9 and initialPos - 7 are diagonals
@@ -113,7 +134,6 @@ public class Board
 		
 		if (moves.Contains(finalPos))
 		{
-			GetSnapshot();
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
 				if ((_boardStatus[i] & GetBit(finalPos)) != 0) //check if final position is occupied by any other piece
@@ -136,8 +156,6 @@ public class Board
 		
 		if (moves.Contains(finalPos))
 		{
-			GetSnapshot();
-
 			if (Mathf.Abs(finalPos - initialPos) == 2) //king is castling
 			{
 				_boardStatus[pieceIdx] ^= (GetBit(initialPos) | GetBit(finalPos));
@@ -168,13 +186,6 @@ public class Board
 		}
 		return false;
 	}
-	private void GetSnapshot()
-	{
-		for (int i = 0; i < _boardStatus.Length; ++i)
-		{
-			_boardSnapshot[i] = _boardStatus[i];
-		}
-	}
 
 	public int GetIndex(Type type, Colour colour){
 		return ((colour == Colour.WHITE) ? 0 : 1) * 6 + (int)type;
@@ -187,7 +198,9 @@ public class Board
 	public void CleanBoard()
 	{
 		_boardStatus = new ulong[12];
-		_boardSnapshot = new ulong[12];
+		_enPassantPosition = -1;
+		_halfMoves = _fullMoves = 0;
+
 		_whiteCanCastle = new bool[2];
 		_blackCanCastle = new bool[2];
 		_movesMade = new Stack<Move>();
@@ -246,7 +259,7 @@ public class Board
 		}
 		else if (pieceIdx % 6 >= 1 && pieceIdx % 6 <= 4) //if piece index is 1,2,3,4,7,8,9,10
 		{
-			valid =  MoveQRBN(pieceIdx, initialPos, finalPos);
+			valid = MoveQRBN(pieceIdx, initialPos, finalPos);
 		}
 		else
 		{
@@ -265,7 +278,18 @@ public class Board
 
 		if (valid)
 		{
+			++_halfMoves;
 			_whiteTurn = !_whiteTurn;
+			if (_halfMoves % 2 == 0)
+			{
+				++_fullMoves;
+			}
+			
+			//if move is not a pawn moves reset enPassant pawn position
+			if (pieceIdx % 6 != 5)
+			{
+				_enPassantPosition = -1;
+			}
 			
 			/*
 			 * If rook has been captured or moved even once, their respective variable will become false and will remain
@@ -318,8 +342,9 @@ public class Board
 		_whiteCanCastle[1] = true;
 		_blackCanCastle[0] = true;
 		_blackCanCastle[1] = true;
-		
-		GetSnapshot();
+		_enPassantPosition = -1;
+		_halfMoves = _fullMoves = 0;
+
 	}
 
 	public bool[] CanCastle(int pieceIndex)
@@ -356,27 +381,28 @@ public class Board
 	public void MakeMove(Move move)
 	{
 		bool capture;
-		move.board = (ulong[])_boardStatus.Clone();
-		move.snapShot = (ulong[])_boardSnapshot.Clone();
 		move.whiteCanCastle = (bool[])_whiteCanCastle.Clone();
 		move.blackCanCastle = (bool[])_blackCanCastle.Clone();
 		move.whiteTurn = _whiteTurn;
+		move.data[0] = _halfMoves;
+		move.data[1] = _fullMoves;
+		move.data[2] = _enPassantPosition;
+		move.board = (ulong[])_boardStatus.Clone();
 		
-		this.Move((int)move.piece, move.position, move.finalPosition);
+		this.Move(move.piece, move.position, move.finalPosition);
 		_movesMade.Push(move);
 	}
 
-	public void UnmakeMove()
+	public void UnmakeMove(Move move)
 	{
-		Move last;
-		if (_movesMade.TryPop(out last))
-		{
-			_boardSnapshot = last.board;
-			_boardStatus = last.board;
-			_whiteCanCastle = last.whiteCanCastle;
-			_blackCanCastle = last.blackCanCastle;
-			_whiteTurn = last.whiteTurn;
-		}
+		_whiteCanCastle = move.whiteCanCastle;
+		_blackCanCastle = move.blackCanCastle;
+		_whiteTurn = move.whiteTurn;
+		_halfMoves = move.data[0];
+		_fullMoves = move.data[1];
+		_enPassantPosition = move.data[2];
+
+		_boardStatus = move.board;
 	}
 
 	public int NumberOfMoves(int depth)
@@ -389,8 +415,9 @@ public class Board
 		foreach (var move in moves)
 		{
 			MakeMove(move);
+			GD.Print(move.ToString());
 			noOfPosition += NumberOfMoves(depth - 1);
-			UnmakeMove();
+			UnmakeMove(move);
 		}
 
 		return noOfPosition;

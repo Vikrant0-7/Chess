@@ -38,7 +38,7 @@ public class MoveGenerator
             List<int> moves = GetMoves(colour, piece, i);
             foreach (var item in moves)
             {
-               @out.Add(new Move(i,(ColourType)_board.GetIndex((Type)piece,(Colour)colour),item));
+               @out.Add(new Move(i,colour * 6 + piece,item));
             }
          }
       }
@@ -59,7 +59,7 @@ public class MoveGenerator
          case 4:
             return LegalMoves.Knight((Colour)colour, _board.BoardStatus, pos);
          case 5:
-            return LegalMoves.Pawn((Colour)colour, _board.BoardStatus, _board.BoardStatus,pos);
+            return LegalMoves.Pawn((Colour)colour, _board.BoardStatus, _board.EnPassantPosition, pos);
          default:
             return LegalMoves.King((Colour)colour, _board.BoardStatus, pos, _board.CanCastle(colour == 0 ? 0 : 6));
       }

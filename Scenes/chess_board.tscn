@@ -154,6 +154,16 @@ layout_mode = 2
 text = "KQkq"
 horizontal_alignment = 1
 
+[node name="Label2" type="Label" parent="CanvasLayer/Control/Debug"]
+layout_mode = 2
+text = "En Passant Status"
+horizontal_alignment = 1
+
+[node name="EnPassant" type="Label" parent="CanvasLayer/Control/Debug"]
+layout_mode = 2
+text = "KQkq"
+horizontal_alignment = 1
+
 [node name="Turn Indicator" type="HBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 2
 offset_left = 64.0
@@ -179,9 +189,9 @@ stretch_mode = 3
 [node name="Legal Moves" type="VBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 0
 offset_left = 640.0
-offset_top = 264.0
-offset_right = 875.0
-offset_bottom = 304.0
+offset_top = 368.0
+offset_right = 876.0
+offset_bottom = 424.0
 script = ExtResource("10_fqstw")
 _boardPath = NodePath("../../..")
 

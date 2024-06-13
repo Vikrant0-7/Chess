@@ -1,8 +1,7 @@
 using Godot;
-using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 
-//Todo: Add ability to set position on board by dragging and dropping pieces.
 public partial class BoardVisual : Node2D
 {
 	#region Exported Variables
@@ -161,7 +160,7 @@ public partial class BoardVisual : Node2D
 		List<int> moves = null;
 		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
 		if (pieceIndex == 5 || pieceIndex == 11)
-			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.BoardSnapshot, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.EnPassantPosition, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 4 || pieceIndex == 10)
 			moves = LegalMoves.Knight(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 3 || pieceIndex == 9)

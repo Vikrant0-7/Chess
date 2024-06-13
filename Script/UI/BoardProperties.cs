@@ -9,6 +9,7 @@ public partial class BoardProperties : VBoxContainer
 	private BoardVisual _visual;
 
 	private Label castling;
+	private Label enPassant;
 	
 	public override void _Ready()
 	{
@@ -20,6 +21,7 @@ public partial class BoardProperties : VBoxContainer
 		GetNode<Button>("Reset").Pressed += () => _OnResetBoardPressed();
 
 		castling = GetNode<Label>("Castle");
+		enPassant = GetNode<Label>("EnPassant");
 	}
 
 	void _OnMovesToggled(bool toggled)
@@ -62,5 +64,6 @@ public partial class BoardProperties : VBoxContainer
 	public override void _Process(double delta)
 	{
 		castling.Text = _visual.board.GetCastlingString();
+		enPassant.Text = _visual.board.EnPassantPosition.ToString();
 	}
 }
