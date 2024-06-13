@@ -50,7 +50,7 @@ public partial class BoardVisual : Node2D
 		
 		Generate();
 	}
-
+	
 	//Generates an Chess Board with initial configuration
 	void Generate(){
 		for(int i = 0; i < 8; ++i){
@@ -147,7 +147,7 @@ public partial class BoardVisual : Node2D
 		bool capture = false;
 		bool moveValid = false;
 		moveValid = _board.Move(pieceIndex, BoardPositionToInt(initialPosition), 
-			BoardPositionToInt(finalPosition), out capture);
+			BoardPositionToInt(finalPosition));
 		_moved = true;
 		return moveValid;
 	}

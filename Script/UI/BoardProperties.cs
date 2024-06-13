@@ -7,6 +7,9 @@ public partial class BoardProperties : VBoxContainer
 	public NodePath board;
 	// Called when the node enters the scene tree for the first time.
 	private BoardVisual _visual;
+
+	private Label castling;
+	
 	public override void _Ready()
 	{
 		_visual = GetNode<BoardVisual>(board);
@@ -15,6 +18,8 @@ public partial class BoardProperties : VBoxContainer
 		GetNode<OptionButton>("Attacks/OptionButton").ItemSelected += (what) => _OnAttacksItemSelected(what);
 		GetNode<Button>("Refresh").Pressed += () => _OnRefreshBoardPressed();
 		GetNode<Button>("Reset").Pressed += () => _OnResetBoardPressed();
+
+		castling = GetNode<Label>("Castle");
 	}
 
 	void _OnMovesToggled(bool toggled)
@@ -52,5 +57,10 @@ public partial class BoardProperties : VBoxContainer
 	void _OnResetBoardPressed()
 	{
 		_visual.Reset();
+	}
+
+	public override void _Process(double delta)
+	{
+		castling.Text = _visual.board.GetCastlingString();
 	}
 }

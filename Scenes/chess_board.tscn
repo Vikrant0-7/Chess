@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://b4bshy74cjsdq"]
+[gd_scene load_steps=26 format=3 uid="uid://b4bshy74cjsdq"]
 
 [ext_resource type="Script" path="res://Script/Board/BoardVisual.cs" id="1_6qg82"]
 [ext_resource type="PackedScene" uid="uid://d3ddry3idf6eb" path="res://Assets/square.res" id="2_w26xg"]
@@ -9,18 +9,35 @@
 [ext_resource type="Texture2D" uid="uid://cvm2bhn7ds2w7" path="res://sprites/wk.svg" id="7_atdpb"]
 [ext_resource type="Script" path="res://Script/UI/Turn.cs" id="7_k0o7r"]
 [ext_resource type="Texture2D" uid="uid://dfej2dww7j06l" path="res://sprites/bk.svg" id="9_ohx4l"]
+[ext_resource type="Script" path="res://Script/UI/UILegalMoves.cs" id="10_fqstw"]
+[ext_resource type="Script" path="res://Script/UI/UISetBoard.cs" id="11_k38uv"]
+[ext_resource type="Texture2D" uid="uid://x1yg05hyrciv" path="res://sprites/bb.svg" id="12_bmsqv"]
+[ext_resource type="Texture2D" uid="uid://bu766icsb38tp" path="res://sprites/wq.svg" id="12_jseni"]
+[ext_resource type="Texture2D" uid="uid://bvq43trfmpndp" path="res://sprites/wr.svg" id="13_mvj7c"]
+[ext_resource type="Texture2D" uid="uid://h5etmgfna4jx" path="res://sprites/wb.svg" id="14_ea6gv"]
+[ext_resource type="Texture2D" uid="uid://dh5ekwvoswhqc" path="res://sprites/wn.svg" id="15_tusei"]
+[ext_resource type="Texture2D" uid="uid://cpxinpd7cpyau" path="res://sprites/wp.svg" id="16_wxj1s"]
+[ext_resource type="Texture2D" uid="uid://cso45rvqag3ej" path="res://sprites/bq.svg" id="17_egbfs"]
+[ext_resource type="Texture2D" uid="uid://r3qdfsou6qye" path="res://sprites/br.svg" id="18_yd8v2"]
+[ext_resource type="Texture2D" uid="uid://cp1of1vrj1fy7" path="res://sprites/bn.svg" id="20_dqwck"]
+[ext_resource type="Texture2D" uid="uid://eqeibi6wrd0t" path="res://sprites/bp.svg" id="21_2fy72"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_5vden"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_sk3ry"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yfxck"]
 
 [sub_resource type="Theme" id="Theme_yust3"]
 Button/font_sizes/font_size = 18
 Button/fonts/font = ExtResource("5_c8x7i")
+HSeparator/styles/separator = SubResource("StyleBoxEmpty_sk3ry")
 Label/font_sizes/font_size = 18
 Label/fonts/font = ExtResource("5_c8x7i")
 OptionButton/font_sizes/font_size = 15
 OptionButton/fonts/font = ExtResource("5_c8x7i")
-VSeparator/constants/separation = 8
-VSeparator/styles/separator = SubResource("StyleBoxEmpty_5vden")
+TextEdit/font_sizes/font_size = 15
+TextEdit/fonts/font = ExtResource("5_c8x7i")
+VSeparator/constants/separation = 6
+VSeparator/styles/separator = SubResource("StyleBoxEmpty_yfxck")
 
 [sub_resource type="QuadMesh" id="QuadMesh_jiq02"]
 size = Vector2(400, 400)
@@ -127,7 +144,17 @@ text = "Refresh Board"
 layout_mode = 2
 text = "Reset Board"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control"]
+[node name="Label" type="Label" parent="CanvasLayer/Control/Debug"]
+layout_mode = 2
+text = "Castling Status"
+horizontal_alignment = 1
+
+[node name="Castle" type="Label" parent="CanvasLayer/Control/Debug"]
+layout_mode = 2
+text = "KQkq"
+horizontal_alignment = 1
+
+[node name="Turn Indicator" type="HBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 2
 offset_left = 64.0
 offset_top = 512.0
@@ -139,14 +166,182 @@ _white = ExtResource("7_atdpb")
 _black = ExtResource("9_ohx4l")
 _boardPath = NodePath("../../..")
 
-[node name="Label" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
+[node name="Label" type="Label" parent="CanvasLayer/Control/Turn Indicator"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 35
 text = "Turn"
 
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/Control/Turn Indicator"]
 layout_mode = 2
 texture = ExtResource("7_atdpb")
+stretch_mode = 3
+
+[node name="Legal Moves" type="VBoxContainer" parent="CanvasLayer/Control"]
+layout_mode = 0
+offset_left = 640.0
+offset_top = 264.0
+offset_right = 875.0
+offset_bottom = 304.0
+script = ExtResource("10_fqstw")
+_boardPath = NodePath("../../..")
+
+[node name="Label2" type="Label" parent="CanvasLayer/Control/Legal Moves"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
+
+[node name="Attacks2" type="HBoxContainer" parent="CanvasLayer/Control/Legal Moves"]
+layout_mode = 2
+
+[node name="LineEdit" type="LineEdit" parent="CanvasLayer/Control/Legal Moves/Attacks2"]
+layout_mode = 2
+text = "1"
+max_length = 1
+virtual_keyboard_type = 2
+
+[node name="VSeparator2" type="VSeparator" parent="CanvasLayer/Control/Legal Moves/Attacks2"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="CanvasLayer/Control/Legal Moves/Attacks2"]
+custom_minimum_size = Vector2(155.545, 0)
+layout_mode = 2
+text = "Legal Moves"
+
+[node name="Board Setter" type="VBoxContainer" parent="CanvasLayer/Control"]
+layout_mode = 0
+offset_left = 896.0
+offset_top = 64.0
+offset_right = 982.0
+offset_bottom = 104.0
+script = ExtResource("11_k38uv")
+boardNodePath = NodePath("../../..")
+textures = Array[Texture2D]([ExtResource("7_atdpb"), ExtResource("12_jseni"), ExtResource("13_mvj7c"), ExtResource("14_ea6gv"), ExtResource("15_tusei"), ExtResource("16_wxj1s"), ExtResource("9_ohx4l"), ExtResource("17_egbfs"), ExtResource("18_yd8v2"), ExtResource("12_bmsqv"), ExtResource("20_dqwck"), ExtResource("21_2fy72")])
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "Setup Board"
+horizontal_alignment = 1
+
+[node name="startsetup" type="CheckBox" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "Start Board Setup"
+alignment = 2
+
+[node name="colour" type="OptionButton" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+item_count = 2
+selected = 0
+popup/item_0/text = "White"
+popup/item_0/id = 0
+popup/item_1/text = "Black"
+popup/item_1/id = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+
+[node name="k" type="Button" parent="CanvasLayer/Control/Board Setter/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+text = "King"
+
+[node name="q" type="Button" parent="CanvasLayer/Control/Board Setter/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+text = "Queen"
+
+[node name="r" type="Button" parent="CanvasLayer/Control/Board Setter/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+text = "Rook"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+
+[node name="b" type="Button" parent="CanvasLayer/Control/Board Setter/HBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+text = "Bishop"
+
+[node name="n" type="Button" parent="CanvasLayer/Control/Board Setter/HBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+text = "Knight"
+
+[node name="p" type="Button" parent="CanvasLayer/Control/Board Setter/HBoxContainer2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+text = "Pawn"
+
+[node name="Black Castling" type="Label" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "Black Castle"
+horizontal_alignment = 1
+
+[node name="Black Castle" type="HBoxContainer" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+
+[node name="bcq" type="CheckBox" parent="CanvasLayer/Control/Board Setter/Black Castle"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+text = "Queen"
+
+[node name="bck" type="CheckBox" parent="CanvasLayer/Control/Board Setter/Black Castle"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+text = "King"
+
+[node name="Black Castling2" type="Label" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "White Castle"
+horizontal_alignment = 1
+
+[node name="White Castle" type="HBoxContainer" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+
+[node name="CQ" type="CheckBox" parent="CanvasLayer/Control/Board Setter/White Castle"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+text = "Queen"
+
+[node name="CK" type="CheckBox" parent="CanvasLayer/Control/Board Setter/White Castle"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+text = "King"
+
+[node name="whiteturn" type="CheckBox" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "White's Turn"
+
+[node name="Set" type="Button" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "Set"
+
+[node name="Clean" type="Button" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "Clean"
+
+[node name="HSeparator" type="HSeparator" parent="CanvasLayer/Control/Board Setter"]
+custom_minimum_size = Vector2(0, 40.935)
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+text = "Current Piece"
+horizontal_alignment = 1
+
+[node name="texture" type="TextureRect" parent="CanvasLayer/Control/Board Setter"]
+layout_mode = 2
+texture = ExtResource("12_bmsqv")
 stretch_mode = 3
 
 [node name="MeshInstance2D" type="MeshInstance2D" parent="."]
