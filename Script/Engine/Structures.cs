@@ -1,8 +1,5 @@
-using Godot;
-using System;
-
-//Todo: To reduce time complexity of move may be store captures so that that piece can be revived.
-public class Move
+﻿//Todo: To reduce time complexity of move may be store captures so that that piece can be revived.
+public struct Move
 {
 
     public int position;
@@ -20,6 +17,11 @@ public class Move
         this.piece = piece;
         this.finalPosition = finalPosition;
         data = new int[3];
+
+        this.board = null;
+        this.whiteTurn = false;
+        this.whiteCanCastle = null;
+        this.blackCanCastle = null;
     }
 
     public override string ToString()

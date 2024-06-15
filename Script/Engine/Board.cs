@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Threading;
 using System.Collections.Generic;
 
 //Todo: Add check for mate condition.
@@ -25,7 +26,7 @@ public class Board
 	
 	public int EnPassantPosition => _enPassantPosition;
 	public ulong[] BoardStatus => _boardStatus;
-
+	
 	public bool WhiteTurn
 	{
 		set => _whiteTurn = value;
@@ -43,13 +44,16 @@ public class Board
 	}
 
 	
-	bool MovePawn(int pieceIdx, int initialPos, int finalPos)
+	bool MovePawn(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true)
 	{
 		bool caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = global::LegalMoves.Pawn(c, _boardStatus, _enPassantPosition, initialPos);
+		
+		List<int> moves = new List<int>();
+		if(checkLegal)
+			moves = LegalMoves.Pawn(c, _boardStatus, _enPassantPosition, initialPos);
 
-		if (moves.Contains(finalPos))
+		if (!checkLegal || moves.Contains(finalPos))
 		{
 			//Pawn has moved 2 places then, square just behind is _enPassantPosition
 			if (Mathf.Abs(initialPos - finalPos) == 16)
@@ -111,28 +115,31 @@ public class Board
 		return false;
 	}
 
-	bool MoveQRBN(int pieceIdx, int initialPos, int finalPos) //moves queen, rook, bishop and knight
+	bool MoveQRBN(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true) //moves queen, rook, bishop and knight
 	{
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
 
-		List<int> moves;
-		switch (pieceIdx % 6)
+		List<int> moves = new List<int>();
+		if (checkLegal)
 		{
-			case 1: //1 and 7 are queens
-				moves = LegalMoves.Queen(c, _boardStatus, initialPos);
-				break;
-			case 2: //2 and 8 are rooks
-				moves = LegalMoves.Queen(c, _boardStatus, initialPos);
-				break;
-			case 3: //3 and 9 and bishops
-				moves = LegalMoves.Bishop(c, _boardStatus, initialPos);
-				break;
-			default:
-				moves = LegalMoves.Knight(c, _boardStatus, initialPos);
-				break;
+			switch (pieceIdx % 6)
+			{
+				case 1: //1 and 7 are queens
+					moves = LegalMoves.Queen(c, _boardStatus, initialPos);
+					break;
+				case 2: //2 and 8 are rooks
+					moves = LegalMoves.Queen(c, _boardStatus, initialPos);
+					break;
+				case 3: //3 and 9 and bishops
+					moves = LegalMoves.Bishop(c, _boardStatus, initialPos);
+					break;
+				default:
+					moves = LegalMoves.Knight(c, _boardStatus, initialPos);
+					break;
+			}
 		}
-		
-		if (moves.Contains(finalPos))
+
+		if (!checkLegal || moves.Contains(finalPos))
 		{
 			for (int i = (c == Colour.BLACK ? 0 : 6); i < (c == Colour.BLACK ? 6 : 12); ++i)
 			{
@@ -149,12 +156,14 @@ public class Board
 		return false;
 	}
 	
-	bool MoveKing(int pieceIdx, int initialPos, int finalPos)
+	bool MoveKing(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true)
 	{
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
-		List<int> moves = global::LegalMoves.King(c, _boardStatus, initialPos, CanCastle(pieceIdx));
+		List<int> moves = new List<int>();
+		if(checkLegal)
+			LegalMoves.King(c, _boardStatus, initialPos, CanCastle(pieceIdx));
 		
-		if (moves.Contains(finalPos))
+		if (!checkLegal || moves.Contains(finalPos))
 		{
 			if (Mathf.Abs(finalPos - initialPos) == 2) //king is castling
 			{
@@ -246,7 +255,7 @@ public class Board
 		return (_boardStatus[pieceIndex] & GetBit(position)) != 0; 
 	}
 
-	public bool Move(int pieceIdx, int initialPos, int finalPos)
+	public bool Move(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true)
 	{
 		if ((_whiteTurn && pieceIdx > 5) || (!_whiteTurn && pieceIdx <= 5)) //not your turn to move.
 		{
@@ -255,15 +264,15 @@ public class Board
 		bool valid = false;
 		if (pieceIdx % 6 == 5) //if piece index is 5 or 11
 		{
-			valid =  MovePawn(pieceIdx, initialPos, finalPos);
+			valid =  MovePawn(pieceIdx, initialPos, finalPos, checkLegal);
 		}
 		else if (pieceIdx % 6 >= 1 && pieceIdx % 6 <= 4) //if piece index is 1,2,3,4,7,8,9,10
 		{
-			valid = MoveQRBN(pieceIdx, initialPos, finalPos);
+			valid = MoveQRBN(pieceIdx, initialPos, finalPos, checkLegal);
 		}
 		else
 		{
-			valid =  MoveKing(pieceIdx, initialPos, finalPos);
+			valid =  MoveKing(pieceIdx, initialPos, finalPos, checkLegal);
 			if (valid && pieceIdx == 0)
 			{
 				_whiteCanCastle[0] = false;
@@ -389,7 +398,7 @@ public class Board
 		move.data[2] = _enPassantPosition;
 		move.board = (ulong[])_boardStatus.Clone();
 		
-		this.Move(move.piece, move.position, move.finalPosition);
+		this.Move(move.piece, move.position, move.finalPosition, false);
 		_movesMade.Push(move);
 	}
 
@@ -405,6 +414,21 @@ public class Board
 		_boardStatus = move.board;
 	}
 
+	public void RequestNoOfMoves(int depth, Action<int> callback, Queue<NoOfMovesThreadData<int>> queue)
+	{
+		ThreadStart start = () => NoOfMovesThread(depth,callback, queue);
+		new Thread(start).Start();
+	}
+
+	void NoOfMovesThread(int depth, Action<int> callback, Queue<NoOfMovesThreadData<int>> queue)
+	{
+		int noOfMoves = NumberOfMoves(depth);
+		lock (queue)
+		{
+			queue.Enqueue(new NoOfMovesThreadData<int>(callback,noOfMoves));
+		}
+	}
+	
 	public int NumberOfMoves(int depth)
 	{
 		if (depth == 0)
@@ -415,7 +439,6 @@ public class Board
 		foreach (var move in moves)
 		{
 			MakeMove(move);
-			GD.Print(move.ToString());
 			noOfPosition += NumberOfMoves(depth - 1);
 			UnmakeMove(move);
 		}
@@ -423,4 +446,16 @@ public class Board
 		return noOfPosition;
 	}
 	
+}
+
+public struct NoOfMovesThreadData<T>
+{
+	public Action<T> callback;
+	public T parameter;
+
+	public NoOfMovesThreadData(Action<T> callback, T parameter)
+	{
+		this.callback = callback;
+		this.parameter = parameter;
+	}
 }
