@@ -128,7 +128,7 @@ public class Board
 					moves = LegalMoves.Queen(c, _boardStatus, initialPos);
 					break;
 				case 2: //2 and 8 are rooks
-					moves = LegalMoves.Queen(c, _boardStatus, initialPos);
+					moves = LegalMoves.Rook(c, _boardStatus, initialPos);
 					break;
 				case 3: //3 and 9 and bishops
 					moves = LegalMoves.Bishop(c, _boardStatus, initialPos);
@@ -161,7 +161,7 @@ public class Board
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
 		List<int> moves = new List<int>();
 		if(checkLegal)
-			LegalMoves.King(c, _boardStatus, initialPos, CanCastle(pieceIdx));
+			moves = LegalMoves.King(c, _boardStatus, initialPos, CanCastle(pieceIdx));
 		
 		if (!checkLegal || moves.Contains(finalPos))
 		{
@@ -388,8 +388,7 @@ public class Board
 	
 
 	public void MakeMove(Move move)
-	{
-		bool capture;
+	{ 
 		move.whiteCanCastle = (bool[])_whiteCanCastle.Clone();
 		move.blackCanCastle = (bool[])_blackCanCastle.Clone();
 		move.whiteTurn = _whiteTurn;
