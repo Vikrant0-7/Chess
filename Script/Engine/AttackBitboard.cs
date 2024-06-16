@@ -39,7 +39,6 @@ public class AttackBitboard
                                 break;
                             }
                         }
-
                         break;
                     }
                     case 7:

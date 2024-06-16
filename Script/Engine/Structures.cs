@@ -1,5 +1,5 @@
 ﻿//Todo: To reduce time complexity of move may be store captures so that that piece can be revived.
-public struct Move
+public class Move
 {
 
     public int position;
@@ -10,6 +10,8 @@ public struct Move
     public int[] data;
     public ulong[] board;
     public bool whiteTurn;
+    public ulong attack;
+    public ulong pin;
     
     public Move(int position, int piece, int finalPosition)
     {
@@ -18,10 +20,10 @@ public struct Move
         this.finalPosition = finalPosition;
         data = new int[3];
 
-        this.board = null;
+        this.board = new ulong[12];
         this.whiteTurn = false;
-        this.whiteCanCastle = null;
-        this.blackCanCastle = null;
+        this.whiteCanCastle = new bool[2];
+        this.blackCanCastle = new bool[2];
     }
 
     public override string ToString()

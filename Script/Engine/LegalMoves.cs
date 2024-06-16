@@ -8,6 +8,7 @@ using System.Collections.Generic;
  */
 
 //Todo: Run Tests to make sure that moves generated are actually legal.
+//Todo: Using Checkers Bitboard Remove the need of function RemoveIllegalMoves().
 
 public class LegalMoves
 {
@@ -25,9 +26,49 @@ public class LegalMoves
         return y * 8 + x;
     }
 
-    public static List<int> Pawn(Colour colour, ulong[] boardState, int enPassantPosition, int pos)
+    static bool MoveIsInDirection(int dirX, int dirY, Vector2I reference)
+    {
+        float angle = dirX * reference.X + reference.Y * dirY;
+        angle /= (Mathf.Sqrt(reference.LengthSquared()) * Mathf.Sqrt(dirX * dirX + dirY * dirY));
+        angle = Mathf.Clamp(angle,-1,1);
+        
+        angle = Mathf.Acos(angle);
+        return (Mathf.IsEqualApprox(angle, 180 / Mathf.Pi) || Mathf.IsZeroApprox(angle)) ;
+    }
+
+    //Work around: If King is under check use previous method to make sure move is legal
+    public static List<int> Pawn(Colour colour, ulong[] boardState, ulong bitboard, ulong attackBitboard, int enPassantPosition, int pos)
     {
         List<int> @out = new List<int>();
+        Vector2I pPos = IntToBoardPosition(pos);
+
+        Vector2I kPos = Vector2I.One * -1;
+
+        if (colour == Colour.WHITE)
+        {
+            for (int i = 63; i >= 0; --i)
+            {
+                if ((boardState[0] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 64; ++i)
+            {
+                if ((boardState[6] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+
+        Vector2I direction = pPos - kPos;
+        bool isPinned = (bitboard & GetBit(pos)) != 0;
+        bool check = (attackBitboard & GetBit(kPos.Y * 8 + kPos.X)) != 0;
+        
         if (colour == Colour.WHITE)
         {
             ulong freeSquares = 0; //if any bit is 0 after the for loop that means that position do not have any piece
@@ -41,37 +82,60 @@ public class LegalMoves
 
             bool notBlocked = false;
 
+            int legalPos = BoardPositionToInt(pPos.X, pPos.Y - 1);
             //if pawn next Square is Free
-            if (pos >= 8 && (freeSquares & GetBit(pos - 8)) == 0)
+            if (pPos.Y > 0 && (freeSquares & GetBit(legalPos)) == 0)
             {
-                @out.Add(pos - 8);
-                notBlocked = true;
-            }
-
-            if (pos >= 48) //pawn is moving two steps
-            {
-                if (notBlocked &&
-                    (freeSquares & GetBit(pos - 16)) == 0) //if pawn is notBlocked and position is free
+                if (!isPinned || MoveIsInDirection(0, - 1, direction))
                 {
-                    @out.Add(pos - 16);
+                    @out.Add(legalPos);
+                    notBlocked = true;
                 }
             }
 
-
-            if (!((pos + 1) % 8 == 0)) //if can capture a blackPiece 
+            
+            if (pPos.Y == 6) //pawn is moving two steps
             {
-                if ((blackSquares & GetBit(pos - 7)) != 0)
-                    @out.Add(pos - 7);
-                if (enPassantPosition == pos - 7 && (freeSquares & GetBit(pos - 7)) == 0)
-                    @out.Add(pos - 7);
+                legalPos = BoardPositionToInt(pPos.X, pPos.Y - 2);
+                if (notBlocked &&
+                    (freeSquares & GetBit(legalPos)) == 0) //if pawn is notBlocked and position is free
+                {
+                    if(!isPinned || MoveIsInDirection(0, - 2, direction))
+                        @out.Add(pos - 16);
+                }
             }
 
-            if (!(pos % 8 == 0)) //if can capture a blackPiece 
+            
+            if (pPos.X > 0) //if can capture a blackPiece 
             {
-                if ((blackSquares & GetBit(pos - 9)) != 0)
-                    @out.Add(pos - 9);
-                if (enPassantPosition == pos - 9 && (freeSquares & GetBit(pos - 9)) == 0)
-                    @out.Add(pos - 9);
+                legalPos = BoardPositionToInt(pPos.X - 1, pPos.Y - 1);
+                if ((blackSquares & GetBit(legalPos)) != 0)
+                {
+                    if(!isPinned || MoveIsInDirection(- 1,  - 1, direction))   
+                        @out.Add(legalPos);
+                }
+
+                if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
+                {
+                    if(!isPinned || MoveIsInDirection( - 1,  - 1, direction))   
+                        @out.Add(legalPos);
+                }
+            }
+
+            if (pPos.X < 7) //if can capture a blackPiece 
+            {
+                legalPos = BoardPositionToInt(pPos.X + 1, pPos.Y - 1);
+                if ((blackSquares & GetBit(legalPos)) != 0)
+                {
+                    if(!isPinned || MoveIsInDirection(  1,  - 1, direction))   
+                        @out.Add(legalPos);
+                }
+
+                if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
+                {
+                    if(!isPinned || MoveIsInDirection(  1,  - 1, direction))   
+                        @out.Add(legalPos);
+                }
             }
         }
         else
@@ -84,50 +148,98 @@ public class LegalMoves
                 if (i <= 5)
                     whiteSquares |= boardState[i];
             }
-
-
             bool notBlocked = false;
+            int legalPos = BoardPositionToInt(pPos.X, pPos.Y + 1);
             //if pawn next Square is Free
-            if ((freeSquares & GetBit(pos + 8)) == 0)
+            if (pPos.Y > 0 && (freeSquares & GetBit(legalPos)) == 0)
             {
-                @out.Add(pos + 8);
-                notBlocked = true;
-            }
-
-            if (pos <= 15) //pawn is moving two steps
-            {
-                if (pos < 48 && notBlocked && (freeSquares & GetBit(pos + 16)) == 0) //if pawn is notBlocked
+                if (!isPinned || MoveIsInDirection(0, 1, direction))
                 {
-                    @out.Add(pos + 16);
+                    @out.Add(legalPos);
+                    notBlocked = true;
                 }
             }
-
-
-            if (!(pos % 8 == 0)) //if can capture a blackPiece 
+            if (pPos.Y == 1) //pawn is moving two steps
             {
-                if ((whiteSquares & GetBit(pos + 7)) != 0)
-                    @out.Add(pos + 7);
-                if (enPassantPosition == pos + 7 && (freeSquares & GetBit(pos + 7)) == 0)
-                    @out.Add(pos + 7);
+                legalPos = BoardPositionToInt(pPos.X, pPos.Y + 2);
+                if (notBlocked &&
+                    (freeSquares & GetBit(legalPos)) == 0) //if pawn is notBlocked and position is free
+                {
+                    if (!isPinned || MoveIsInDirection(0, +2, direction))
+                        @out.Add(legalPos);
+                }
             }
-
-            if (!((pos + 1) % 8 == 0)) //if can capture a blackPiece 
+            if (pPos.X > 0) //if can capture a blackPiece 
             {
-                if ((whiteSquares & GetBit(pos + 9)) != 0)
-                    @out.Add(pos + 9);
-                if (enPassantPosition == pos + 9 && (freeSquares & GetBit(pos + 9)) == 0)
-                    @out.Add(pos + 9);
+                legalPos = BoardPositionToInt(pPos.X - 1, pPos.Y + 1);
+                if ((whiteSquares & GetBit(legalPos)) != 0)
+                {
+                    if (!isPinned || MoveIsInDirection(-1, 1, direction))
+                        @out.Add(legalPos);
+                }
+
+                if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
+                {
+                    if (!isPinned || MoveIsInDirection(-1, 1, direction))
+                        @out.Add(legalPos);
+                }
+            }
+            if (pPos.X < 7) //if can capture a blackPiece 
+            {
+                legalPos = BoardPositionToInt(pPos.X + 1, pPos.Y + 1);
+                if ((whiteSquares & GetBit(legalPos)) != 0)
+                {
+                    if (!isPinned || MoveIsInDirection(1, 1, direction))
+                        @out.Add(legalPos);
+                }
+                if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
+                {
+                    if (!isPinned || MoveIsInDirection(1, 1, direction))
+                        @out.Add(legalPos);
+                }
             }
         }
 
-        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 5, pos, boardState, @out);
+        if (check)
+            return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 5, pos, boardState, @out);
+        
+        return @out;
     }
 
-    public static List<int> Knight(Colour colour, ulong[] boardState, int pos)
+    public static List<int> Knight(Colour colour, ulong[] boardState, ulong bitboard, ulong attackBitboard, int pos)
     {
+        
         List<int> @out = new List<int>();
         ulong oppositeSquares = 0; //tells if given position is occupied by a black piece.
 
+        if ((bitboard & GetBit(pos)) != 0) //if a knight is pinned. It cannot move
+            return @out;
+        
+        int kPos = -1;
+
+        if (colour == Colour.WHITE)
+        {
+            for (int i = 63; i >= 0; --i)
+            {
+                if ((boardState[0] & GetBit(i)) != 0)
+                {
+                    kPos = i;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 64; ++i)
+            {
+                if ((boardState[6] & GetBit(i)) != 0)
+                {
+                    kPos = i;
+                }
+            }
+        }
+        bool check = (attackBitboard & GetBit(kPos)) != 0;
+
+        
         if (colour == Colour.WHITE)
         {
             for (int i = 0; i <= 5; ++i)
@@ -211,13 +323,45 @@ public class LegalMoves
                     @out.Add(legalPosition);
             }
         }
+        
+        if (check)
+            return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 4, pos, boardState, @out);
 
-        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 4, pos, boardState, @out);
+        return @out;
     }
 
-    public static List<int> Bishop(Colour colour, ulong[] boardState, int pos)
+    public static List<int> Bishop(Colour colour, ulong[] boardState, ulong bitboard, ulong attackBitboard, int pos)
     {
         List<int> @return = new List<int>();
+        
+        Vector2I bPos = IntToBoardPosition(pos);
+        Vector2I kPos = Vector2I.One * -1;
+
+        if (colour == Colour.WHITE)
+        {
+            for (int i = 63; i >= 0; --i)
+            {
+                if ((boardState[0] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 64; ++i)
+            {
+                if ((boardState[6] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+
+        Vector2I direction = bPos - kPos;
+        bool isPinned = (bitboard & GetBit(pos)) != 0;
+        bool check = (attackBitboard & GetBit(kPos.Y * 8 + kPos.X)) != 0;
+        
         ulong freeSquares = 0; //if any bit is 0 after the for loop that means that position do not have any piece
         ulong oppositeSquares = 0; //tells if given position is occupied by a black piece.
 
@@ -254,11 +398,15 @@ public class LegalMoves
 
             if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                @return.Add(possiblePos);
+                if (!isPinned || MoveIsInDirection(-x, y - position.Y, direction))
+                    @return.Add(possiblePos);
+                else
+                    stopSearchLeft = true;
             }
             else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                @return.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(-x,y - position.Y, direction))
+                    @return.Add(possiblePos);
                 stopSearchLeft = true;
             }
             else
@@ -274,11 +422,15 @@ public class LegalMoves
 
             if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                @return.Add(possiblePos);
+                if (!isPinned || MoveIsInDirection(x, y - position.Y, direction))
+                    @return.Add(possiblePos);
+                else
+                    stopSearchRight = true;
             }
             else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                @return.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(x,y - position.Y, direction))
+                    @return.Add(possiblePos);
                 stopSearchRight = true;
             }
             else
@@ -300,11 +452,17 @@ public class LegalMoves
 
             if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                @return.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(-x,y - position.Y, direction))
+                    @return.Add(possiblePos);
+                else
+                {
+                    stopSearchLeft = true;
+                }
             }
             else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                @return.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(-x,y - position.Y, direction))
+                    @return.Add(possiblePos);
                 stopSearchLeft = true;
             }
             else
@@ -320,11 +478,15 @@ public class LegalMoves
 
             if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                @return.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(x,y - position.Y, direction))
+                    @return.Add(possiblePos);
+                else
+                    stopSearchRight = true;
             }
             else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                @return.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(x,y - position.Y, direction))
+                    @return.Add(possiblePos);
                 stopSearchRight = true;
             }
             else
@@ -332,12 +494,42 @@ public class LegalMoves
                 stopSearchRight = true;
             }
         }
-
-        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 3, pos, boardState, @return);
+        if(check)
+            return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 3, pos, boardState, @return);
+        return @return;
     }
 
-    public static List<int> Rook(Colour colour, ulong[] boardState, int pos)
+    public static List<int> Rook(Colour colour, ulong[] boardState, ulong bitboard, ulong attackBitboard, int pos)
     {
+        
+        Vector2I rPos = IntToBoardPosition(pos);
+        Vector2I kPos = Vector2I.One * -1;
+
+        if (colour == Colour.WHITE)
+        {
+            for (int i = 63; i >= 0; --i)
+            {
+                if ((boardState[0] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 64; ++i)
+            {
+                if ((boardState[6] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+
+        Vector2I direction = rPos - kPos;
+        bool isPinned = (bitboard & GetBit(pos)) != 0;
+        bool check = (attackBitboard & GetBit(kPos.Y * 8 + kPos.X)) != 0;
+        
         ulong freeSquares = 0;
         ulong oppositeSquares = 0;
         List<int> moves = new List<int>();
@@ -372,11 +564,15 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(x, position.Y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
+                else
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
@@ -390,11 +586,15 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(x, position.Y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
+                else
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
@@ -408,11 +608,15 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(position.X, y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
+                else 
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
@@ -426,11 +630,15 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(position.X, y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
+                else 
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
@@ -438,12 +646,42 @@ public class LegalMoves
                 break;
             }
         }
-
-        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 2, pos, boardState, moves);
+        if(check)
+            return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 2, pos, boardState, moves);
+        return moves;
     }
 
-    public static List<int> Queen(Colour colour, ulong[] boardState, int pos)
+    public static List<int> Queen(Colour colour, ulong[] boardState, ulong bitboard, ulong attackBitboard, int pos)
     {
+                
+        Vector2I rPos = IntToBoardPosition(pos);
+        Vector2I kPos = Vector2I.One * -1;
+
+        if (colour == Colour.WHITE)
+        {
+            for (int i = 63; i >= 0; --i)
+            {
+                if ((boardState[0] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 64; ++i)
+            {
+                if ((boardState[6] & GetBit(i)) != 0)
+                {
+                    kPos = IntToBoardPosition(i);
+                }
+            }
+        }
+
+        Vector2I direction = rPos - kPos;
+        bool isPinned = (bitboard & GetBit(pos)) != 0;
+        bool check = (attackBitboard & GetBit(kPos.Y * 8 + kPos.X)) != 0;
+        
         ulong freeSquares = 0;
         ulong oppositeSquares = 0;
         List<int> moves = new List<int>();
@@ -478,11 +716,15 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(x, position.Y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
+                else
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
@@ -496,11 +738,15 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(x, position.Y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
+                else
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if(!isPinned || MoveIsInDirection(x-position.X,0,direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
@@ -514,11 +760,15 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(position.X, y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
+                else 
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
@@ -532,38 +782,45 @@ public class LegalMoves
             int possiblePosition = BoardPositionToInt(position.X, y);
             if ((freeSquares & GetBit(possiblePosition)) == 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
+                else 
+                    break;
             }
             else if ((oppositeSquares & GetBit(possiblePosition)) != 0)
             {
-                moves.Add(possiblePosition);
+                if (!isPinned || MoveIsInDirection(0, y - position.Y, direction))
+                    moves.Add(possiblePosition);
                 break;
             }
             else
             {
-
                 break;
             }
         }
-
-        int i1 = 1;
+        
+        int X = 1;
         bool stopSearchLeft = false, stopSearchRight = false;
 
-        for (int y = position.Y - 1; y >= 0; --y, ++i1)
+        for (int y = position.Y - 1; y >= 0; --y, ++X)
         {
-            int possiblePos = BoardPositionToInt(position.X - i1, y);
-            if (position.X - i1 < 0)
+            int possiblePos = BoardPositionToInt(position.X - X, y);
+            if (position.X - X < 0)
             {
                 stopSearchLeft = true;
             }
 
             if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                moves.Add(possiblePos);
+                if (!isPinned || MoveIsInDirection(-X, y - position.Y, direction))
+                    moves.Add(possiblePos);
+                else
+                    stopSearchLeft = true;
             }
             else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                moves.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(-X,y - position.Y, direction))
+                    moves.Add(possiblePos);
                 stopSearchLeft = true;
             }
             else
@@ -571,19 +828,23 @@ public class LegalMoves
                 stopSearchLeft = true;
             }
 
-            possiblePos = BoardPositionToInt(position.X + i1, y);
-            if (position.X + i1 >= 8)
+            possiblePos = BoardPositionToInt(position.X + X, y);
+            if (position.X + X >= 8)
             {
                 stopSearchRight = true;
             }
 
             if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                moves.Add(possiblePos);
+                if (!isPinned || MoveIsInDirection(X, y - position.Y, direction))
+                    moves.Add(possiblePos);
+                else
+                    stopSearchRight = true;
             }
             else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                moves.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(X,y - position.Y, direction))
+                    moves.Add(possiblePos);
                 stopSearchRight = true;
             }
             else
@@ -592,24 +853,30 @@ public class LegalMoves
             }
         }
 
-        i1 = 1;
+        X = 1;
         stopSearchLeft = false;
         stopSearchRight = false;
-        for (int y = position.Y + 1; y < 8; ++y, ++i1)
+        for (int y = position.Y + 1; y < 8; ++y, ++X)
         {
-            int possiblePos = BoardPositionToInt(position.X - i1, y);
-            if (position.X - i1 < 0)
+            int possiblePos = BoardPositionToInt(position.X - X, y);
+            if (position.X - X < 0)
             {
                 stopSearchLeft = true;
             }
 
             if (!stopSearchLeft && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                moves.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(-X,y - position.Y, direction))
+                    moves.Add(possiblePos);
+                else
+                {
+                    stopSearchLeft = true;
+                }
             }
             else if (!stopSearchLeft && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                moves.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(-X,y - position.Y, direction))
+                    moves.Add(possiblePos);
                 stopSearchLeft = true;
             }
             else
@@ -617,19 +884,23 @@ public class LegalMoves
                 stopSearchLeft = true;
             }
 
-            possiblePos = BoardPositionToInt(position.X + i1, y);
-            if (position.X + i1 >= 8)
+            possiblePos = BoardPositionToInt(position.X + X, y);
+            if (position.X + X >= 8)
             {
                 stopSearchRight = true;
             }
 
             if (!stopSearchRight && (freeSquares & GetBit(possiblePos)) == 0)
             {
-                moves.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(X,y - position.Y, direction))
+                    moves.Add(possiblePos);
+                else
+                    stopSearchRight = true;
             }
             else if (!stopSearchRight && (oppositeSquares & GetBit(possiblePos)) != 0)
             {
-                moves.Add(possiblePos);
+                if(!isPinned || MoveIsInDirection(X,y - position.Y, direction))
+                    moves.Add(possiblePos);
                 stopSearchRight = true;
             }
             else
@@ -637,8 +908,10 @@ public class LegalMoves
                 stopSearchRight = true;
             }
         }
-
-        return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 1, pos, boardState, moves);
+        
+        if(check)
+            return RemoveIllegalMoves((colour == Colour.WHITE ? 0 : 6) + 2, pos, boardState, moves);
+        return moves;
     }
 
     public static List<int> King(Colour colour, ulong[] boardState, int pos, bool[] canCastle)
@@ -693,7 +966,7 @@ public class LegalMoves
     }
 
     
-    static List<int> RemoveIllegalMoves(int pieceIdx, int pos, ulong[] boardStatus, List<int> moves)
+    public static List<int> RemoveIllegalMoves(int pieceIdx, int pos, ulong[] boardStatus, List<int> moves)
     {
         List<int> lastPlace = new List<int>(moves);
         Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;

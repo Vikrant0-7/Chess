@@ -73,7 +73,26 @@ public partial class BoardVisual : Node2D
 				_squareContainer.CallDeferred("add_child", mesh);
 			}
 		}
+
 		_board.InitialBoardConfig();
+		_board.BoardConfig(
+				new ulong[]
+				{
+					1152921504606846976,
+					4294967296,
+					9295429630892703744,
+					2594073385365405696,
+					4755801206503243776,
+					70654617200885760,
+					16,
+					8,
+					129,
+					36,
+					66,
+					587520,
+				}
+			);
+		GD.Print(_board.CurrAttackBitboard);
 		SetBoard();
 	}
 
@@ -160,15 +179,15 @@ public partial class BoardVisual : Node2D
 		List<int> moves = null;
 		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
 		if (pieceIndex == 5 || pieceIndex == 11)
-			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.EnPassantPosition, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, _board.EnPassantPosition, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 4 || pieceIndex == 10)
-			moves = LegalMoves.Knight(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Knight(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 3 || pieceIndex == 9)
-			moves = LegalMoves.Bishop(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Bishop(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 2 || pieceIndex == 8)
-			moves = LegalMoves.Rook(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Rook(c, _board.BoardStatus,_board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 1 || pieceIndex == 7)
-			moves = LegalMoves.Queen(c, _board.BoardStatus, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Queen(c, _board.BoardStatus,_board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 0 || pieceIndex == 6)
 			moves = LegalMoves.King(c, _board.BoardStatus, BoardPositionToInt(initialPosition), board.CanCastle(pieceIndex));
 		
@@ -206,11 +225,9 @@ public partial class BoardVisual : Node2D
 
 	void ShowAttacks()
 	{
-		ulong attacked = AttackBitboard.GetAttackBitBoard(showAttacks == 1 ? Colour.WHITE : Colour.BLACK,_board.BoardStatus);
-		GD.Print("Attacks: ", attacked);
 		for (int i = 0; i < 64; ++i)
 		{
-			if ((attacked & (ulong)1 << i) != 0)
+			if ((_board.CurrAttackBitboard & (ulong)1 << i) != 0)
 			{
 				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
 				if (sq.Modulate == _darkSquares)

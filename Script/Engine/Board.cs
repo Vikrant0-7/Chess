@@ -23,6 +23,9 @@ public class Board
 	private MoveGenerator _moveGenerator;
 	private int _halfMoves;
 	private int _fullMoves;
+
+	private ulong _pinnedBitboard;
+	private ulong _attackBitboard;
 	
 	public int EnPassantPosition => _enPassantPosition;
 	public ulong[] BoardStatus => _boardStatus;
@@ -32,6 +35,9 @@ public class Board
 		set => _whiteTurn = value;
 		get => _whiteTurn;
 	}
+
+	public ulong PinnedBitboard => _pinnedBitboard;
+	public ulong CurrAttackBitboard => _attackBitboard;
 	
 	public Board(){
 		_boardStatus = new ulong[12];
@@ -51,7 +57,7 @@ public class Board
 		
 		List<int> moves = new List<int>();
 		if(checkLegal)
-			moves = LegalMoves.Pawn(c, _boardStatus, _enPassantPosition, initialPos);
+			moves = LegalMoves.Pawn(c, _boardStatus, _pinnedBitboard, _attackBitboard, _enPassantPosition, initialPos);
 
 		if (!checkLegal || moves.Contains(finalPos))
 		{
@@ -125,16 +131,16 @@ public class Board
 			switch (pieceIdx % 6)
 			{
 				case 1: //1 and 7 are queens
-					moves = LegalMoves.Queen(c, _boardStatus, initialPos);
+					moves = LegalMoves.Queen(c, _boardStatus,_pinnedBitboard, _attackBitboard, initialPos);
 					break;
 				case 2: //2 and 8 are rooks
-					moves = LegalMoves.Rook(c, _boardStatus, initialPos);
+					moves = LegalMoves.Rook(c, _boardStatus,_pinnedBitboard, _attackBitboard, initialPos);
 					break;
 				case 3: //3 and 9 and bishops
-					moves = LegalMoves.Bishop(c, _boardStatus, initialPos);
+					moves = LegalMoves.Bishop(c, _boardStatus,_pinnedBitboard, _attackBitboard, initialPos);
 					break;
 				default:
-					moves = LegalMoves.Knight(c, _boardStatus, initialPos);
+					moves = LegalMoves.Knight(c, _boardStatus, _pinnedBitboard, _attackBitboard, initialPos);
 					break;
 			}
 		}
@@ -281,7 +287,7 @@ public class Board
 			else if(valid)
 			{
 				_blackCanCastle[0] = false;
-				_whiteCanCastle[1] = false;
+				_blackCanCastle[1] = false;
 			}
 		}
 
@@ -293,6 +299,9 @@ public class Board
 			{
 				++_fullMoves;
 			}
+			
+			_pinnedBitboard = PinBitboard.GetPinnedPositions(_whiteTurn ? 0 : 1, _boardStatus);
+			_attackBitboard = AttackBitboard.GetAttackBitBoard(_whiteTurn ? Colour.BLACK : Colour.WHITE, _boardStatus);
 			
 			//if move is not a pawn moves reset enPassant pawn position
 			if (pieceIdx % 6 != 5)
@@ -353,6 +362,13 @@ public class Board
 		_blackCanCastle[1] = true;
 		_enPassantPosition = -1;
 		_halfMoves = _fullMoves = 0;
+		_attackBitboard = AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus);
+	}
+
+	public void BoardConfig(ulong[] b)
+	{
+		this._boardStatus = b;
+		_attackBitboard = AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus);
 
 	}
 
@@ -396,9 +412,10 @@ public class Board
 		move.data[1] = _fullMoves;
 		move.data[2] = _enPassantPosition;
 		move.board = (ulong[])_boardStatus.Clone();
+		move.attack = _attackBitboard;
+		move.pin = _pinnedBitboard;
 		
 		this.Move(move.piece, move.position, move.finalPosition, false);
-		_movesMade.Push(move);
 	}
 
 	public void UnmakeMove(Move move)
@@ -409,6 +426,8 @@ public class Board
 		_halfMoves = move.data[0];
 		_fullMoves = move.data[1];
 		_enPassantPosition = move.data[2];
+		_pinnedBitboard = move.pin;
+		_attackBitboard = move.attack;
 
 		_boardStatus = move.board;
 	}
@@ -434,7 +453,8 @@ public class Board
 			return 1;
 		List < global::Move > moves = _moveGenerator.GenerateMoves();
 		int noOfPosition = 0;
-
+		
+		
 		foreach (var move in moves)
 		{
 			MakeMove(move);
