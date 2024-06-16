@@ -36,13 +36,15 @@ public class LegalMoves
     }
 
     //Work around: If King is under check use previous method to make sure move is legal
-    public static List<int> Pawn(Colour colour, ulong[] boardState, ulong bitboard, ulong attackBitboard, int enPassantPosition, int pos)
+    public static List<int> Pawn(Colour colour, ulong[] boardState, ulong bitboard, ulong attackBitboard, int enPassantPosition, int pos, out bool canPromote)
     {
         List<int> @out = new List<int>();
         Vector2I pPos = IntToBoardPosition(pos);
 
         Vector2I kPos = Vector2I.One * -1;
 
+        canPromote = false;
+        
         if (colour == Colour.WHITE)
         {
             for (int i = 63; i >= 0; --i)
@@ -89,6 +91,10 @@ public class LegalMoves
                 {
                     @out.Add(legalPos);
                     notBlocked = true;
+                    if (pPos.Y == 1)
+                    {
+                        canPromote = true;
+                    }
                 }
             }
 
@@ -100,7 +106,7 @@ public class LegalMoves
                     (freeSquares & GetBit(legalPos)) == 0) //if pawn is notBlocked and position is free
                 {
                     if(!isPinned || MoveIsInDirection(0, - 2, direction))
-                        @out.Add(pos - 16);
+                        @out.Add(legalPos);
                 }
             }
 
@@ -110,8 +116,12 @@ public class LegalMoves
                 legalPos = BoardPositionToInt(pPos.X - 1, pPos.Y - 1);
                 if ((blackSquares & GetBit(legalPos)) != 0)
                 {
-                    if(!isPinned || MoveIsInDirection(- 1,  - 1, direction))   
+                    if (!isPinned || MoveIsInDirection(-1, -1, direction))
+                    {
                         @out.Add(legalPos);
+                        if (pPos.Y == 1)
+                            canPromote = true;
+                    }
                 }
 
                 if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
@@ -126,8 +136,12 @@ public class LegalMoves
                 legalPos = BoardPositionToInt(pPos.X + 1, pPos.Y - 1);
                 if ((blackSquares & GetBit(legalPos)) != 0)
                 {
-                    if(!isPinned || MoveIsInDirection(  1,  - 1, direction))   
+                    if (!isPinned || MoveIsInDirection(1, -1, direction))
+                    {
                         @out.Add(legalPos);
+                        if (pPos.Y == 1)
+                            canPromote = true;
+                    }
                 }
 
                 if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
@@ -150,12 +164,14 @@ public class LegalMoves
             bool notBlocked = false;
             int legalPos = BoardPositionToInt(pPos.X, pPos.Y + 1);
             //if pawn next Square is Free
-            if (pPos.Y > 0 && (freeSquares & GetBit(legalPos)) == 0)
+            if (pPos.Y < 7 && (freeSquares & GetBit(legalPos)) == 0)
             {
                 if (!isPinned || MoveIsInDirection(0, 1, direction))
                 {
                     @out.Add(legalPos);
                     notBlocked = true;
+                    if (pPos.Y == 6)
+                        canPromote = true;
                 }
             }
             if (pPos.Y == 1) //pawn is moving two steps
@@ -174,7 +190,12 @@ public class LegalMoves
                 if ((whiteSquares & GetBit(legalPos)) != 0)
                 {
                     if (!isPinned || MoveIsInDirection(-1, 1, direction))
+                    {
                         @out.Add(legalPos);
+                        if (pPos.Y == 1)
+                            canPromote = true;
+                    }
+
                 }
 
                 if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
@@ -189,7 +210,11 @@ public class LegalMoves
                 if ((whiteSquares & GetBit(legalPos)) != 0)
                 {
                     if (!isPinned || MoveIsInDirection(1, 1, direction))
+                    {
                         @out.Add(legalPos);
+                        if (pPos.Y == 6)
+                            canPromote = true;
+                    }
                 }
                 if (enPassantPosition == legalPos && (freeSquares & GetBit(legalPos)) == 0)
                 {

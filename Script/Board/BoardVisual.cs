@@ -17,8 +17,11 @@ public partial class BoardVisual : Node2D
 	[Export] private Color _pathLightSquare = Colors.Green;
 	[Export] private Color _attackDarkSqaure = Colors.DarkRed;
 	[Export] private Color _attackLighSquare = Colors.Red;
+
+	[Export] private double time;
 	#endregion
 
+	
 	
 	Marker2D _positionPlaceHolder; //Child node that acts as position placeholder for board
 	Node2D _pieceContainer; //Child node that store all pieces as its childs
@@ -160,7 +163,7 @@ public partial class BoardVisual : Node2D
 		List<int> moves = null;
 		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
 		if (pieceIndex == 5 || pieceIndex == 11)
-			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, _board.EnPassantPosition, BoardPositionToInt(initialPosition));
+			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, _board.EnPassantPosition, BoardPositionToInt(initialPosition), out _);
 		if(pieceIndex == 4 || pieceIndex == 10)
 			moves = LegalMoves.Knight(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 3 || pieceIndex == 9)
@@ -271,6 +274,22 @@ public partial class BoardVisual : Node2D
 		{
 			_moved = false;
 			RefreshBoard();
+		}
+	}
+	
+	public async Task NumberOfMoves(int depth)
+	{
+		if (depth == 0)
+			return;
+		List < global::Move > moves = _board.Generator.GenerateMoves();
+		
+		foreach (var move in moves)
+		{
+			_board.MakeMove(move);
+			await ToSignal(GetTree().CreateTimer(time),"timeout");
+			RefreshBoard();
+			await NumberOfMoves(depth - 1);
+			await _board.UnmakeMove(move);
 		}
 	}
 }

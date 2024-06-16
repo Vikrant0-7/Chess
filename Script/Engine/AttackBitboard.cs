@@ -48,7 +48,6 @@ public class AttackBitboard
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Queen(Colour.BLACK, boardStatus, j));
-                                break;
                             }
                         }
 
@@ -56,51 +55,36 @@ public class AttackBitboard
                     }
                     case 8:
                     {
-                        int c = 0;
                         for (int j = 0; j < 64; ++j)
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Rook(Colour.BLACK, boardStatus, j));
-                                ++c;
                             }
-
-                            if (c == 2)
-                                break;
                         }
 
                         break;
                     }
                     case 9:
                     {
-                        int c = 0;
                         for (int j = 0; j < 64; ++j)
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Bishop(Colour.BLACK, boardStatus, j));
-                                ++c;
                             }
-
-                            if (c == 2)
-                                break;
                         }
 
                         break;
                     }
                     case 10:
                     {
-                        int c = 0;
                         for (int j = 0; j < 64; ++j)
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Knight(Colour.BLACK, boardStatus, j));
-                                ++c;
                             }
-
-                            if (c == 2)
-                                break;
                         }
 
                         break;
@@ -158,7 +142,6 @@ public class AttackBitboard
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Queen(Colour.WHITE, boardStatus, j));
-                                break;
                             }
                         }
 
@@ -166,51 +149,36 @@ public class AttackBitboard
                     }
                     case 8:
                     {
-                        int c = 0;
                         for (int j = 0; j < 64; ++j)
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Rook(Colour.WHITE, boardStatus, j));
-                                ++c;
                             }
-
-                            if (c == 2)
-                                break;
                         }
 
                         break;
                     }
                     case 9:
                     {
-                        int c = 0;
                         for (int j = 0; j < 64; ++j)
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Bishop(Colour.WHITE, boardStatus, j));
-                                ++c;
                             }
-
-                            if (c == 2)
-                                break;
                         }
 
                         break;
                     }
                     case 10:
                     {
-                        int c = 0;
                         for (int j = 0; j < 64; ++j)
                         {
                             if ((boardStatus[i] & GetBit(j)) != 0)
                             {
                                 moves.AddRange(Knight(Colour.WHITE, boardStatus, j));
-                                ++c;
                             }
-
-                            if (c == 2)
-                                break;
                         }
 
                         break;

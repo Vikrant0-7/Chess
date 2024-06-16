@@ -5,6 +5,8 @@ public class Move
     public int position;
     public int piece;
     public int finalPosition;
+    public int promoteTo;
+    
     public bool[] whiteCanCastle;
     public bool[] blackCanCastle;
     public int[] data;
@@ -13,12 +15,13 @@ public class Move
     public ulong attack;
     public ulong pin;
     
-    public Move(int position, int piece, int finalPosition)
+    public Move(int position, int piece, int finalPosition, int promoteTo = -1)
     {
         this.position = position;
         this.piece = piece;
         this.finalPosition = finalPosition;
         data = new int[3];
+        this.promoteTo = promoteTo;
 
         this.board = new ulong[12];
         this.whiteTurn = false;

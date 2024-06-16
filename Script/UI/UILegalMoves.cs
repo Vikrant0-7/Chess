@@ -32,6 +32,7 @@ public partial class UILegalMoves : VBoxContainer
 	{
 		int depth = Convert.ToInt32(_lineEdit.Text);
 		_time = 0;
+		//_boardVisual.NumberOfMoves(depth);
 		_boardVisual.board.RequestNoOfMoves(depth, OnDataRecieved, queue);
 	}
 

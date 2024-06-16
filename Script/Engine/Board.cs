@@ -1,10 +1,10 @@
 using Godot;
 using System;
+using System.Threading.Tasks;
 using System.Threading;
 using System.Collections.Generic;
 
 //Todo: Add check for mate condition.
-//Todo: Handle Pawn Promotions
 public class Board
 {
 	private ulong[] _boardStatus;
@@ -16,22 +16,37 @@ public class Board
 	private bool[] _blackCanCastle;
 	// 0 -> Queen Side Castle
 	// 1 -> King Side Castle
-	
-	private Stack<Move> _movesMade;
+
 	private MoveGenerator _moveGenerator;
 	private int _halfMoves;
 	private int _fullMoves;
 
 	private ulong _pinnedBitboard;
 	private ulong _attackBitboard;
+
+	private int _whitePromoteTo = 1;
+	private int _blackPromoteTo = 1;
 	
 	public int EnPassantPosition => _enPassantPosition;
 	public ulong[] BoardStatus => _boardStatus;
+	public MoveGenerator Generator => _moveGenerator;
 	
 	public bool WhiteTurn
 	{
 		set => _whiteTurn = value;
 		get => _whiteTurn;
+	}
+
+	public int WhitePromoteTo
+	{
+		get => _whitePromoteTo;
+		set => _whitePromoteTo = value;
+	}
+
+	public int BlackPromoteTo
+	{
+		get => _blackPromoteTo;
+		set => _blackPromoteTo = value;
 	}
 
 	public ulong PinnedBitboard => _pinnedBitboard;
@@ -43,19 +58,17 @@ public class Board
 		_halfMoves = _fullMoves = 0;
 		_whiteCanCastle = new bool[2];
 		_blackCanCastle = new bool[2];
-		_movesMade = new Stack<Move>();
 		_moveGenerator = new MoveGenerator(this);
 	}
 
-	
-	bool MovePawn(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true)
+	bool MovePawn(int pieceIdx, int initialPos, int finalPos, bool promote = true, bool checkLegal = true)
 	{
 		bool caputure = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
 		
 		List<int> moves = new List<int>();
 		if(checkLegal)
-			moves = LegalMoves.Pawn(c, _boardStatus, _pinnedBitboard, _attackBitboard, _enPassantPosition, initialPos);
+			moves = LegalMoves.Pawn(c, _boardStatus, _pinnedBitboard, _attackBitboard, _enPassantPosition, initialPos, out promote);
 
 		if (!checkLegal || moves.Contains(finalPos))
 		{
@@ -113,7 +126,14 @@ public class Board
 
 				}
 			}
-			_boardStatus[pieceIdx] ^= GetBit(initialPos) | GetBit(finalPos); //acutally update the position of pawn
+			if(!promote)
+				_boardStatus[pieceIdx] ^= GetBit(initialPos) | GetBit(finalPos); //acutally update the position of pawn
+			else
+			{
+				_boardStatus[pieceIdx] ^= GetBit(initialPos);
+				_boardStatus[(pieceIdx < 6 ? 0 : 6) + (pieceIdx < 6 ? _whitePromoteTo : _blackPromoteTo)]
+					^= GetBit(finalPos);
+			}
 			return true;
 		}
 		return false;
@@ -216,7 +236,6 @@ public class Board
 
 		_whiteCanCastle = new bool[2];
 		_blackCanCastle = new bool[2];
-		_movesMade = new Stack<Move>();
 	}
 
 	public void SetCastlingState(bool[] white, bool[] black)
@@ -259,7 +278,7 @@ public class Board
 		return (_boardStatus[pieceIndex] & GetBit(position)) != 0; 
 	}
 
-	public bool Move(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true)
+	public bool Move(int pieceIdx, int initialPos, int finalPos, bool promote = true, bool checkLegal = true)
 	{
 		if ((_whiteTurn && pieceIdx > 5) || (!_whiteTurn && pieceIdx <= 5)) //not your turn to move.
 		{
@@ -268,7 +287,7 @@ public class Board
 		bool valid = false;
 		if (pieceIdx % 6 == 5) //if piece index is 5 or 11
 		{
-			valid =  MovePawn(pieceIdx, initialPos, finalPos, checkLegal);
+			valid =  MovePawn(pieceIdx, initialPos, finalPos, promote, checkLegal);
 		}
 		else if (pieceIdx % 6 >= 1 && pieceIdx % 6 <= 4) //if piece index is 1,2,3,4,7,8,9,10
 		{
@@ -416,11 +435,26 @@ public class Board
 		move.board = (ulong[])_boardStatus.Clone();
 		move.attack = _attackBitboard;
 		move.pin = _pinnedBitboard;
+
+		bool promote = move.promoteTo != -1;
+
+		if (_whiteTurn && promote)
+		{
+			int tmp = _whitePromoteTo;
+			_whitePromoteTo = move.promoteTo;
+			move.promoteTo = tmp;
+		}
+		else
+		{
+			int tmp = _blackPromoteTo;
+			_blackPromoteTo = move.promoteTo;
+			move.promoteTo = tmp;
+		}
 		
-		this.Move(move.piece, move.position, move.finalPosition, false);
+		this.Move(move.piece, move.position, move.finalPosition, promote, false);
 	}
 
-	public void UnmakeMove(Move move)
+	public Task UnmakeMove(Move move)
 	{
 		_whiteCanCastle = move.whiteCanCastle;
 		_blackCanCastle = move.blackCanCastle;
@@ -431,7 +465,14 @@ public class Board
 		_pinnedBitboard = move.pin;
 		_attackBitboard = move.attack;
 
+		if (_whiteTurn && move.promoteTo != -1)
+			_whitePromoteTo = move.promoteTo;
+		else
+			_blackPromoteTo = move.promoteTo;
+
 		_boardStatus = move.board;
+
+		return Task.CompletedTask;
 	}
 
 	public void RequestNoOfMoves(int depth, Action<int> callback, Queue<NoOfMovesThreadData<int>> queue)
