@@ -75,24 +75,6 @@ public partial class BoardVisual : Node2D
 		}
 
 		_board.InitialBoardConfig();
-		_board.BoardConfig(
-				new ulong[]
-				{
-					1152921504606846976,
-					4294967296,
-					9295429630892703744,
-					2594073385365405696,
-					4755801206503243776,
-					70654617200885760,
-					16,
-					8,
-					129,
-					36,
-					66,
-					587520,
-				}
-			);
-		GD.Print(_board.CurrAttackBitboard);
 		SetBoard();
 	}
 
@@ -162,7 +144,6 @@ public partial class BoardVisual : Node2D
 
 	public bool UpdateBoard(int pieceIndex, Vector2I initialPosition, Vector2I finalPosition)
 	{
-		bool capture = false;
 		bool moveValid = false;
 		moveValid = _board.Move(pieceIndex, BoardPositionToInt(initialPosition), 
 			BoardPositionToInt(finalPosition));
@@ -197,7 +178,6 @@ public partial class BoardVisual : Node2D
 			{
 				if (item < 0 || item >= 64)
 				{
-					GD.Print("Item Out of range");
 					continue;
 				}
 				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(item);

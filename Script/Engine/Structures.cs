@@ -28,6 +28,6 @@ public class Move
 
     public override string ToString()
     {
-        return "abcdefgh"[position % 8] + (position / 8).ToString() + "abcdefgh"[finalPosition % 8] + (finalPosition / 8).ToString();
+        return "abcdefgh"[position % 8] + (8 - position / 8).ToString() + "abcdefgh"[finalPosition % 8] + (8 - finalPosition / 8).ToString();
     }
 }

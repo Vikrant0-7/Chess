@@ -65,6 +65,8 @@ public partial class UISetBoard : VBoxContainer
     
     void _OnSetPressed()
     {
+        if(!settingBoard.ButtonPressed)
+            return;
         _boardVisual.board.SetCastlingState(
         new []{whiteCastle[0].ButtonPressed, whiteCastle[1].ButtonPressed},
         new []{blackCastle[0].ButtonPressed, blackCastle[1].ButtonPressed}
@@ -84,6 +86,8 @@ public partial class UISetBoard : VBoxContainer
 
     void _OnCleanPressed()
     {
+        if(!settingBoard.ButtonPressed)
+            return;
         _boardVisual.board.CleanBoard();            
         _boardVisual.RefreshBoard();
     }

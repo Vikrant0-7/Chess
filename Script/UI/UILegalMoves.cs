@@ -10,6 +10,7 @@ public partial class UILegalMoves : VBoxContainer
 
 	private LineEdit _lineEdit;
 	private Label _label;
+	private Label _timeLabel;
 
 	private Queue<NoOfMovesThreadData<int>> queue;
 
@@ -19,7 +20,10 @@ public partial class UILegalMoves : VBoxContainer
 	{
 		_boardVisual = GetNode<BoardVisual>(_boardPath);
 		_lineEdit = GetNode<LineEdit>("Attacks2/LineEdit");
+		
 		_label = GetNode<Label>("Label2");
+		_timeLabel = GetNode<Label>("Time/T");
+		
 		GetNode<Button>("Attacks2/Button").Pressed += () => _OnButtonPressed();
 		queue = new Queue<NoOfMovesThreadData<int>>();
 	}
@@ -43,7 +47,7 @@ public partial class UILegalMoves : VBoxContainer
 
 	void OnDataRecieved(int data)
 	{
-		GD.Print(_time);
+		_timeLabel.Text = Math.Round(_time,3).ToString() + "s";
 		_time = 0;
 		_label.Text = data.ToString();
 	}

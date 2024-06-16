@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://b4bshy74cjsdq"]
+[gd_scene load_steps=27 format=3 uid="uid://b4bshy74cjsdq"]
 
 [ext_resource type="Script" path="res://Script/Board/BoardVisual.cs" id="1_6qg82"]
 [ext_resource type="PackedScene" uid="uid://d3ddry3idf6eb" path="res://Assets/square.res" id="2_w26xg"]
@@ -21,6 +21,7 @@
 [ext_resource type="Texture2D" uid="uid://r3qdfsou6qye" path="res://sprites/br.svg" id="18_yd8v2"]
 [ext_resource type="Texture2D" uid="uid://cp1of1vrj1fy7" path="res://sprites/bn.svg" id="20_dqwck"]
 [ext_resource type="Texture2D" uid="uid://eqeibi6wrd0t" path="res://sprites/bp.svg" id="21_2fy72"]
+[ext_resource type="Script" path="res://Script/UI/Fen.cs" id="22_qemy5"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_sk3ry"]
 
@@ -52,7 +53,7 @@ _darkSquares = Color(0.42195, 0.563418, 0.442958, 1)
 _lightSquares = Color(0.724643, 0.724643, 0.724643, 1)
 
 [node name="Marker" type="Marker2D" parent="."]
-position = Vector2(66, 65)
+position = Vector2(68, 115)
 gizmo_extents = 50.0
 
 [node name="Squares" type="Node2D" parent="Marker"]
@@ -77,15 +78,17 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 mouse_filter = 1
 theme = SubResource("Theme_yust3")
+metadata/_edit_use_anchors_ = true
 
 [node name="Debug" type="VBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 2
-offset_left = 640.0
+offset_left = 784.0
 offset_top = 64.0
-offset_right = 852.0
-offset_bottom = 211.0
+offset_right = 996.0
+offset_bottom = 311.0
 script = ExtResource("6_s58nj")
 board = NodePath("../../..")
+metadata/_edit_use_anchors_ = true
 
 [node name="Moves" type="HBoxContainer" parent="CanvasLayer/Control/Debug"]
 layout_mode = 2
@@ -166,15 +169,18 @@ horizontal_alignment = 1
 
 [node name="Turn Indicator" type="HBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 2
-offset_left = 64.0
-offset_top = 512.0
-offset_right = 464.0
-offset_bottom = 612.0
+anchor_left = -0.0763889
+anchor_right = -0.0763889
+offset_left = 152.0
+offset_top = 8.0
+offset_right = 552.0
+offset_bottom = 108.0
 alignment = 1
 script = ExtResource("7_k0o7r")
 _white = ExtResource("7_atdpb")
 _black = ExtResource("9_ohx4l")
 _boardPath = NodePath("../../..")
+metadata/_edit_use_anchors_ = true
 
 [node name="Label" type="Label" parent="CanvasLayer/Control/Turn Indicator"]
 layout_mode = 2
@@ -188,12 +194,13 @@ stretch_mode = 3
 
 [node name="Legal Moves" type="VBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 0
-offset_left = 640.0
+offset_left = 784.0
 offset_top = 368.0
-offset_right = 876.0
+offset_right = 1020.0
 offset_bottom = 424.0
 script = ExtResource("10_fqstw")
 _boardPath = NodePath("../../..")
+metadata/_edit_use_anchors_ = true
 
 [node name="Label2" type="Label" parent="CanvasLayer/Control/Legal Moves"]
 layout_mode = 2
@@ -217,15 +224,31 @@ custom_minimum_size = Vector2(155.545, 0)
 layout_mode = 2
 text = "Legal Moves"
 
+[node name="Time" type="HBoxContainer" parent="CanvasLayer/Control/Legal Moves"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label3" type="Label" parent="CanvasLayer/Control/Legal Moves/Time"]
+layout_mode = 2
+text = "Time Taken: "
+horizontal_alignment = 1
+
+[node name="T" type="Label" parent="CanvasLayer/Control/Legal Moves/Time"]
+layout_mode = 2
+text = "0
+"
+horizontal_alignment = 1
+
 [node name="Board Setter" type="VBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 0
-offset_left = 896.0
+offset_left = 1040.0
 offset_top = 64.0
-offset_right = 982.0
-offset_bottom = 104.0
+offset_right = 1240.0
+offset_bottom = 601.0
 script = ExtResource("11_k38uv")
 boardNodePath = NodePath("../../..")
 textures = Array[Texture2D]([ExtResource("7_atdpb"), ExtResource("12_jseni"), ExtResource("13_mvj7c"), ExtResource("14_ea6gv"), ExtResource("15_tusei"), ExtResource("16_wxj1s"), ExtResource("9_ohx4l"), ExtResource("17_egbfs"), ExtResource("18_yd8v2"), ExtResource("12_bmsqv"), ExtResource("20_dqwck"), ExtResource("21_2fy72")])
+metadata/_edit_use_anchors_ = true
 
 [node name="Label" type="Label" parent="CanvasLayer/Control/Board Setter"]
 layout_mode = 2
@@ -354,7 +377,43 @@ layout_mode = 2
 texture = ExtResource("12_bmsqv")
 stretch_mode = 3
 
+[node name="Fen" type="VBoxContainer" parent="CanvasLayer/Control"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 600.0
+offset_right = 1056.0
+offset_bottom = 689.0
+script = ExtResource("22_qemy5")
+_boardNodePath = NodePath("../../..")
+metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/Fen"]
+layout_mode = 2
+text = "Fen String"
+horizontal_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="CanvasLayer/Control/Fen"]
+layout_mode = 2
+placeholder_text = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+expand_to_text_length = true
+
+[node name="Button" type="HBoxContainer" parent="CanvasLayer/Control/Fen"]
+layout_mode = 2
+alignment = 1
+
+[node name="Fen" type="Button" parent="CanvasLayer/Control/Fen/Button"]
+custom_minimum_size = Vector2(144.455, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Fen To Board"
+
+[node name="Board" type="Button" parent="CanvasLayer/Control/Fen/Button"]
+custom_minimum_size = Vector2(144.455, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Board To Fen"
+
 [node name="MeshInstance2D" type="MeshInstance2D" parent="."]
 visible = false
-position = Vector2(266, 265)
+position = Vector2(268, 315)
 mesh = SubResource("QuadMesh_jiq02")

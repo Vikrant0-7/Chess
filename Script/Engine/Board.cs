@@ -4,8 +4,6 @@ using System.Threading;
 using System.Collections.Generic;
 
 //Todo: Add check for mate condition.
-//Todo: Implement translation of FEN to board positions.
-//Todo: Migrate moves to Move class.
 //Todo: Handle Pawn Promotions
 public class Board
 {
@@ -365,11 +363,15 @@ public class Board
 		_attackBitboard = AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus);
 	}
 
-	public void BoardConfig(ulong[] b)
+	public void BoardConfig(FenTranslator fen)
 	{
-		this._boardStatus = b;
-		_attackBitboard = AttackBitboard.GetAttackBitBoard(Colour.WHITE, _boardStatus);
-
+		_boardStatus = fen.BoardStatus;
+		_whiteCanCastle = fen.WhiteCastleStatus;
+		_blackCanCastle = fen.BlackCastleStatus;
+		_whiteTurn = fen.WhiteTurn;
+		_enPassantPosition = fen.EnPassantSquare;
+		_pinnedBitboard = PinBitboard.GetPinnedPositions(_whiteTurn ? 0 : 1, _boardStatus);
+		_attackBitboard = AttackBitboard.GetAttackBitBoard(_whiteTurn ? Colour.BLACK : Colour.WHITE, _boardStatus);
 	}
 
 	public bool[] CanCastle(int pieceIndex)

@@ -7,7 +7,6 @@ using System.Collections.Generic;
  * and see if king can be captured, if it can it is illegal.
  */
 
-//Todo: Run Tests to make sure that moves generated are actually legal.
 //Todo: Using Checkers Bitboard Remove the need of function RemoveIllegalMoves().
 
 public class LegalMoves
