@@ -173,7 +173,7 @@ public partial class BoardVisual : Node2D
 		if(pieceIndex == 1 || pieceIndex == 7)
 			moves = LegalMoves.Queen(c, _board.BoardStatus,_board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
 		if(pieceIndex == 0 || pieceIndex == 6)
-			moves = LegalMoves.King(c, _board.BoardStatus, BoardPositionToInt(initialPosition), board.CanCastle(pieceIndex));
+			moves = LegalMoves.King(c, _board.BoardStatus, BoardPositionToInt(initialPosition), board.GetCastleStatus(pieceIndex));
 		
 		if (moves != null)
 		{
@@ -286,6 +286,7 @@ public partial class BoardVisual : Node2D
 		foreach (var move in moves)
 		{
 			_board.MakeMove(move);
+			GD.Print(move.ToString());
 			await ToSignal(GetTree().CreateTimer(time),"timeout");
 			RefreshBoard();
 			await NumberOfMoves(depth - 1);
@@ -293,3 +294,5 @@ public partial class BoardVisual : Node2D
 		}
 	}
 }
+
+//rnbqkbnr/pppp1ppp/1B6/4p3/8/3P4/PPP1PPPP/RN1QKBNR b KQkq - 0 1

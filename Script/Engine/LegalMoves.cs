@@ -174,11 +174,10 @@ public class LegalMoves
                         canPromote = true;
                 }
             }
-            if (pPos.Y == 1) //pawn is moving two steps
+            if (pPos.Y == 1 && notBlocked) //pawn is moving two steps
             {
                 legalPos = BoardPositionToInt(pPos.X, pPos.Y + 2);
-                if (notBlocked &&
-                    (freeSquares & GetBit(legalPos)) == 0) //if pawn is notBlocked and position is free
+                if ((freeSquares & GetBit(legalPos)) == 0) //if pawn is notBlocked and position is free
                 {
                     if (!isPinned || MoveIsInDirection(0, +2, direction))
                         @out.Add(legalPos);
@@ -192,7 +191,7 @@ public class LegalMoves
                     if (!isPinned || MoveIsInDirection(-1, 1, direction))
                     {
                         @out.Add(legalPos);
-                        if (pPos.Y == 1)
+                        if (pPos.Y == 6)
                             canPromote = true;
                     }
 

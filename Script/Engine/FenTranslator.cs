@@ -1,6 +1,6 @@
 ﻿using System;
+using Godot;
 
-//TODO: Translate Board to FEN string.
 public class FenTranslator
 {
     private string[] _fenArray;
@@ -10,12 +10,16 @@ public class FenTranslator
     private bool[] _blackCastleStatus;
     private int _enPassantSquare;
     private bool _whiteTurn;
+    private string _fenString;
 
+    public string FenString => _fenString;
     public ulong[] BoardStatus => _boardStatus;
     public bool[] WhiteCastleStatus => _whiteCastleStatus;
     public bool[] BlackCastleStatus => _blackCastleStatus;
     public int EnPassantSquare => _enPassantSquare;
     public bool WhiteTurn => _whiteTurn;
+
+
 
     public FenTranslator(string str)
     {
@@ -34,6 +38,7 @@ public class FenTranslator
         ProcessCastle();
     }
     
+    //Todo: Add two last bits and pieces of _fenString;
     public FenTranslator(ulong[] boardStatus, bool[] whiteCastleStatus, bool[] blackCastleStatus, int enPassantSquare, bool whiteTurn)
     {
         _boardStatus = boardStatus;
@@ -41,7 +46,47 @@ public class FenTranslator
         _blackCastleStatus = blackCastleStatus;
         _enPassantSquare = enPassantSquare;
         _whiteTurn = whiteTurn;
+
+        _fenString = "";
+
+        _fenString += ProcessBoardToFen() + " ";
+        _fenString += ((_whiteTurn) ? "w" : "b") + " ";
+        _fenString += GetCastlingString() + " ";
+        _fenString += ((enPassantSquare == -1) ? "-" : GetNotation()) + " ";
+        
+        _fenString += "0 1";
     }
+    string ProcessBoardToFen(){
+        string @out = "";
+        int freeSquare = 0;
+
+        for(int i = 0; i < 64; ++i){
+            int piece = GetPiece(i);
+
+            if(i % 8 == 0 && i != 0){
+                if(freeSquare > 0){
+                    @out += freeSquare.ToString();
+                    freeSquare = 0;
+                }
+                @out += "/";
+            }
+            if(piece == -1){
+                ++freeSquare;
+                continue;
+            }
+            if(freeSquare > 0){
+                @out += freeSquare.ToString();
+                @out += PieceToAlgebra(piece);
+                freeSquare = 0;
+            }
+            else{
+                GD.Print(piece);
+                @out += PieceToAlgebra(piece);
+            }
+        }
+        return @out;
+    }
+
 
     void ProcessBoard()
     {
@@ -152,5 +197,41 @@ public class FenTranslator
             return -1;
         return (8 - Convert.ToInt32(str[1]) + Convert.ToInt32('0')) * 8 + "abcdefgh".IndexOf(str[0]);
     }
+
+    char PieceToAlgebra(int piece){
+        return "KQRBNPkqrbnp"[piece];
+    }
+
+    int GetPiece(int pos){
+        int @out = -1;
+        for(int i = 0; i < 12; ++i){
+            if((_boardStatus[i] & GetBit(pos)) != 0){
+                @out = i;
+                break;
+            }
+        }
+        return @out;
+    }
     
+    String GetCastlingString()
+	{
+		String @out = "";
+		if (!_whiteCastleStatus[0] && !_blackCastleStatus[0] &&
+		    !_whiteCastleStatus[1] && !_blackCastleStatus[1]
+		   )
+			@out = "-";
+		if (_whiteCastleStatus[1])
+			@out += "K";
+		if (_whiteCastleStatus[0])
+			@out += "Q";
+		if (_blackCastleStatus[1])
+			@out += "k";
+		if (_blackCastleStatus[0])
+			@out += "q";
+		return @out;
+	}
+
+    string GetNotation(){
+        return "abcdefgh"[_enPassantSquare % 8] + (8 - _enPassantSquare / 8).ToString();
+    }
 }

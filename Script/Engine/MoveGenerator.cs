@@ -74,7 +74,7 @@ public class MoveGenerator
          case 5:
             return LegalMoves.Pawn((Colour)colour, _board.BoardStatus,  _board.PinnedBitboard, _board.CurrAttackBitboard, _board.EnPassantPosition, pos, out canPromote);
          default:
-            return LegalMoves.King((Colour)colour, _board.BoardStatus, pos, _board.CanCastle(colour == 0 ? 0 : 6));
+            return LegalMoves.King((Colour)colour, _board.BoardStatus, pos, _board.GetCastleStatus(colour == 0 ? 0 : 6));
       }
    }
 }

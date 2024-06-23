@@ -52,7 +52,7 @@ _text = ExtResource("3_ql0j3")
 _pieceInstance = ExtResource("4_7x6rc")
 _darkSquares = Color(0.42195, 0.563418, 0.442958, 1)
 _lightSquares = Color(0.724643, 0.724643, 0.724643, 1)
-time = 0.05
+time = 2.0
 
 [node name="Marker" type="Marker2D" parent="."]
 position = Vector2(68, 115)

@@ -35,7 +35,13 @@ public partial class Fen : VBoxContainer
 
 	void _OnGetFenPressed()
 	{
-		//TODO: Implement getting fen from current board
-		GD.Print("Yet To Implement");
+		Board board = _boardVisual.board;
+
+		FenTranslator translator = new FenTranslator(board.BoardStatus, board.GetCastleStatus(0),
+										board.GetCastleStatus(11), board.EnPassantPosition, board.WhiteTurn);
+		
+		_input.Text = translator.FenString;
+
 	}
+	
 }

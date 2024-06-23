@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Collections.Generic;
 
-//Todo: Add check for mate condition.
+//TODO: Add check for mate condition.
 public class Board
 {
 	private ulong[] _boardStatus;
@@ -185,7 +185,7 @@ public class Board
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
 		List<int> moves = new List<int>();
 		if(checkLegal)
-			moves = LegalMoves.King(c, _boardStatus, initialPos, CanCastle(pieceIdx));
+			moves = LegalMoves.King(c, _boardStatus, initialPos, GetCastleStatus(pieceIdx));
 		
 		if (!checkLegal || moves.Contains(finalPos))
 		{
@@ -228,14 +228,45 @@ public class Board
 		return colour * 6 + type;
 	}
 
-	public void CleanBoard()
-	{
-		_boardStatus = new ulong[12];
-		_enPassantPosition = -1;
-		_halfMoves = _fullMoves = 0;
+	public bool GetPiece(int pieceIndex, int position){
+		if(position < 0 || position >= 64){
+			throw new IndexOutOfRangeException("Position should be in range [0,63]: " + position.ToString());
+		}
+		return (_boardStatus[pieceIndex] & GetBit(position)) != 0; 
+	}
 
-		_whiteCanCastle = new bool[2];
-		_blackCanCastle = new bool[2];
+	public ulong GetBit(int bit){
+		return (ulong)1 << (bit);
+	}
+
+	public bool[] GetCastleStatus(int pieceIndex)
+	{
+		if (pieceIndex <= 5)
+		{
+			return _whiteCanCastle;
+		}
+		else
+		{
+			return _blackCanCastle;
+		}
+	}
+
+	public String GetCastlingString()
+	{
+		String @out = "";
+		if (!_whiteCanCastle[0] && !_blackCanCastle[0] &&
+		    !_whiteCanCastle[1] && !_blackCanCastle[1]
+		   )
+			@out = "-";
+		if (_whiteCanCastle[1])
+			@out += "K";
+		if (_whiteCanCastle[0])
+			@out += "Q";
+		if (_blackCanCastle[1])
+			@out += "k";
+		if (_blackCanCastle[0])
+			@out += "q";
+		return @out;
 	}
 
 	public void SetCastlingState(bool[] white, bool[] black)
@@ -271,11 +302,14 @@ public class Board
 		}
 	}
 	
-	public bool GetPiece(int pieceIndex, int position){
-		if(position < 0 || position >= 64){
-			throw new IndexOutOfRangeException("Position should be in range [0,63]: " + position.ToString());
-		}
-		return (_boardStatus[pieceIndex] & GetBit(position)) != 0; 
+	public void CleanBoard()
+	{
+		_boardStatus = new ulong[12];
+		_enPassantPosition = -1;
+		_halfMoves = _fullMoves = 0;
+
+		_whiteCanCastle = new bool[2];
+		_blackCanCastle = new bool[2];
 	}
 
 	public bool Move(int pieceIdx, int initialPos, int finalPos, bool promote = true, bool checkLegal = true)
@@ -344,10 +378,7 @@ public class Board
 
 		return valid;
 	}
-	
-	public ulong GetBit(int bit){
-		return (ulong)1 << (bit);
-	}
+
 
 	//Initializes board to its initial config.
 	public void InitialBoardConfig(){
@@ -391,38 +422,7 @@ public class Board
 		_enPassantPosition = fen.EnPassantSquare;
 		_pinnedBitboard = PinBitboard.GetPinnedPositions(_whiteTurn ? 0 : 1, _boardStatus);
 		_attackBitboard = AttackBitboard.GetAttackBitBoard(_whiteTurn ? Colour.BLACK : Colour.WHITE, _boardStatus);
-	}
-
-	public bool[] CanCastle(int pieceIndex)
-	{
-		if (pieceIndex <= 5)
-		{
-			return _whiteCanCastle;
-		}
-		else
-		{
-			return _blackCanCastle;
-		}
-	}
-
-	public String GetCastlingString()
-	{
-		String @out = "";
-		if (!_whiteCanCastle[0] && !_blackCanCastle[0] &&
-		    !_whiteCanCastle[1] && !_blackCanCastle[1]
-		   )
-			@out = "-";
-		if (_whiteCanCastle[1])
-			@out += "K";
-		if (_whiteCanCastle[0])
-			@out += "Q";
-		if (_blackCanCastle[1])
-			@out += "k";
-		if (_blackCanCastle[0])
-			@out += "q";
-		return @out;
-	}
-	
+	}	
 
 	public void MakeMove(Move move)
 	{ 
