@@ -10,6 +10,8 @@ public partial class BoardProperties : VBoxContainer
 
 	private Label castling;
 	private Label enPassant;
+	private Label _halfMoves;
+	private Label _fullMoves;
 	
 	public override void _Ready()
 	{
@@ -22,6 +24,9 @@ public partial class BoardProperties : VBoxContainer
 
 		castling = GetNode<Label>("Castle");
 		enPassant = GetNode<Label>("EnPassant");
+		_halfMoves = GetNode<Label>("%HalfMoves");
+		_fullMoves = GetNode<Label>("%FullMoves");
+
 	}
 
 	void _OnMovesToggled(bool toggled)
@@ -65,5 +70,7 @@ public partial class BoardProperties : VBoxContainer
 	{
 		castling.Text = _visual.board.GetCastlingString();
 		enPassant.Text = _visual.board.EnPassantPosition.ToString();
+		_fullMoves.Text = _visual.board.FullMoves.ToString();
+		_halfMoves.Text = _visual.board.FiftyMoveRule.ToString();
 	}
 }

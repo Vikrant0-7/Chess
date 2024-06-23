@@ -5,6 +5,14 @@ using System.Threading;
 using System.Collections.Generic;
 
 //TODO: Add check for mate condition.
+//TODO: Migrate to hybrid representation of board
+/* Ultimate goal is to fully migrate to board oriented representation, which is
+ * how we see the chess board. Method Currently in use is piece oriented representation
+ * in which bitboard of each piece is stored. Board Oriented is more intutive than piece
+ * oriented but is more memory heavy 96 bytes (in piece oriented) vs 256 bytes (in board oriented).
+ * Need to migrate is that currently all my algorithms are Board oriented and translation between two is
+ * added overhead.
+ */
 public class Board
 {
 	private ulong[] _boardStatus;
@@ -18,8 +26,9 @@ public class Board
 	// 1 -> King Side Castle
 
 	private MoveGenerator _moveGenerator;
-	private int _halfMoves;
+	private int _50MoveRule;
 	private int _fullMoves;
+	
 
 	private ulong _pinnedBitboard;
 	private ulong _attackBitboard;
@@ -29,8 +38,19 @@ public class Board
 	
 	public int EnPassantPosition => _enPassantPosition;
 	public ulong[] BoardStatus => _boardStatus;
-	public MoveGenerator Generator => _moveGenerator;
+
+	public int FiftyMoveRule
+	{
+		set => _50MoveRule = value;
+		get => _50MoveRule;
+	}
 	
+	public int FullMoves
+	{
+		set => _fullMoves = value;
+		get => _fullMoves;
+	}
+
 	public bool WhiteTurn
 	{
 		set => _whiteTurn = value;
@@ -55,15 +75,16 @@ public class Board
 	public Board(){
 		_boardStatus = new ulong[12];
 		_enPassantPosition = -1;
-		_halfMoves = _fullMoves = 0;
+		_50MoveRule = 0;
+		_fullMoves = 1;
 		_whiteCanCastle = new bool[2];
 		_blackCanCastle = new bool[2];
 		_moveGenerator = new MoveGenerator(this);
 	}
 
-	bool MovePawn(int pieceIdx, int initialPos, int finalPos, bool promote = true, bool checkLegal = true)
+	bool MovePawn(int pieceIdx, int initialPos, int finalPos, out bool capture,bool promote = true, bool checkLegal = true)
 	{
-		bool caputure = false;
+		capture = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
 		
 		List<int> moves = new List<int>();
@@ -102,14 +123,14 @@ public class Board
 					if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 					{
 						_boardStatus[i] ^= GetBit(finalPos);
-						caputure = true;
+						capture = true;
 						break;
 					}
 				}
 				//if any piece wasn't captured by previous for loop that means position isn't occupied by any other
 				//piece thus if pawn is capturing an empty square that means it is case of en passante.
 				//Handling En Passant.
-				if (!caputure && c == Colour.WHITE)
+				if (!capture && c == Colour.WHITE)
 				{
 					//11 is index of blackPawn.
 					//In En passant, a pawn has actually moved two steps but pawn can capture on first move
@@ -118,7 +139,7 @@ public class Board
 					//A pawn at index finalPos + 8 is just behind the capturing pawn.
 					_boardStatus[11] ^= GetBit(finalPos + 8);
 				}
-				else if (!caputure && c == Colour.BLACK)
+				else if (!capture && c == Colour.BLACK)
 				{
 					//5 is index of WhitePawn
 					//A pawn at index finalPos - 8 is just behind the capturing pawn.
@@ -139,8 +160,9 @@ public class Board
 		return false;
 	}
 
-	bool MoveQRBN(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true) //moves queen, rook, bishop and knight
+	bool MoveQRBN(int pieceIdx, int initialPos, int finalPos, out bool capture ,bool checkLegal = true) //moves queen, rook, bishop and knight
 	{
+		capture = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
 
 		List<int> moves = new List<int>();
@@ -170,6 +192,7 @@ public class Board
 				if ((_boardStatus[i] & GetBit(finalPos)) != 0) //check if final position is occupied by any other piece
 				{
 					_boardStatus[i] ^= GetBit(finalPos); //if it does, XORing two 1 bits results in 0 at that bit.
+					capture = true;
 					break;
 				}
 			}
@@ -180,8 +203,9 @@ public class Board
 		return false;
 	}
 	
-	bool MoveKing(int pieceIdx, int initialPos, int finalPos, bool checkLegal = true)
+	bool MoveKing(int pieceIdx, int initialPos, int finalPos, out bool capture,bool checkLegal = true)
 	{
+		capture = false;
 		Colour c = (pieceIdx < 6) ? Colour.WHITE : Colour.BLACK;
 		List<int> moves = new List<int>();
 		if(checkLegal)
@@ -208,6 +232,7 @@ public class Board
 					if ((_boardStatus[i] & GetBit(finalPos)) != 0)
 					{
 						_boardStatus[i] ^= GetBit(finalPos);
+						capture = true;
 						break;
 					}
 				}
@@ -306,7 +331,8 @@ public class Board
 	{
 		_boardStatus = new ulong[12];
 		_enPassantPosition = -1;
-		_halfMoves = _fullMoves = 0;
+		_50MoveRule = 0;
+		_fullMoves = 1;
 
 		_whiteCanCastle = new bool[2];
 		_blackCanCastle = new bool[2];
@@ -314,6 +340,7 @@ public class Board
 
 	public bool Move(int pieceIdx, int initialPos, int finalPos, bool promote = true, bool checkLegal = true)
 	{
+		bool capture;
 		if ((_whiteTurn && pieceIdx > 5) || (!_whiteTurn && pieceIdx <= 5)) //not your turn to move.
 		{
 			return false;
@@ -321,15 +348,15 @@ public class Board
 		bool valid = false;
 		if (pieceIdx % 6 == 5) //if piece index is 5 or 11
 		{
-			valid =  MovePawn(pieceIdx, initialPos, finalPos, promote, checkLegal);
+			valid =  MovePawn(pieceIdx, initialPos, finalPos, out capture, promote, checkLegal);
 		}
 		else if (pieceIdx % 6 >= 1 && pieceIdx % 6 <= 4) //if piece index is 1,2,3,4,7,8,9,10
 		{
-			valid = MoveQRBN(pieceIdx, initialPos, finalPos, checkLegal);
+			valid = MoveQRBN(pieceIdx, initialPos, finalPos, out capture, checkLegal);
 		}
 		else
 		{
-			valid =  MoveKing(pieceIdx, initialPos, finalPos, checkLegal);
+			valid =  MoveKing(pieceIdx, initialPos, finalPos, out capture, checkLegal);
 			if (valid && pieceIdx == 0)
 			{
 				_whiteCanCastle[0] = false;
@@ -344,12 +371,17 @@ public class Board
 
 		if (valid)
 		{
-			++_halfMoves;
-			_whiteTurn = !_whiteTurn;
-			if (_halfMoves % 2 == 0)
+			if (!_whiteTurn)
 			{
 				++_fullMoves;
 			}
+
+			++_50MoveRule;
+			if (pieceIdx % 6 == 5 || capture)
+				_50MoveRule = 0;
+			
+			
+			_whiteTurn = !_whiteTurn;
 			
 			_pinnedBitboard = PinBitboard.GetPinnedPositions(_whiteTurn ? 0 : 1, _boardStatus);
 			_attackBitboard = AttackBitboard.GetAttackBitBoard(_whiteTurn ? Colour.BLACK : Colour.WHITE, _boardStatus);
@@ -409,7 +441,8 @@ public class Board
 		_blackCanCastle[0] = true;
 		_blackCanCastle[1] = true;
 		_enPassantPosition = -1;
-		_halfMoves = _fullMoves = 0;
+		_50MoveRule = 0;
+		_fullMoves = 1;
 		_attackBitboard = AttackBitboard.GetAttackBitBoard(Colour.BLACK, _boardStatus);
 	}
 
@@ -422,6 +455,8 @@ public class Board
 		_enPassantPosition = fen.EnPassantSquare;
 		_pinnedBitboard = PinBitboard.GetPinnedPositions(_whiteTurn ? 0 : 1, _boardStatus);
 		_attackBitboard = AttackBitboard.GetAttackBitBoard(_whiteTurn ? Colour.BLACK : Colour.WHITE, _boardStatus);
+		_50MoveRule = fen.Moves[0];
+		_fullMoves = fen.Moves[1];
 	}	
 
 	public void MakeMove(Move move)
@@ -429,7 +464,7 @@ public class Board
 		move.whiteCanCastle = (bool[])_whiteCanCastle.Clone();
 		move.blackCanCastle = (bool[])_blackCanCastle.Clone();
 		move.whiteTurn = _whiteTurn;
-		move.data[0] = _halfMoves;
+		move.data[0] = _50MoveRule;
 		move.data[1] = _fullMoves;
 		move.data[2] = _enPassantPosition;
 		move.board = (ulong[])_boardStatus.Clone();
@@ -459,7 +494,7 @@ public class Board
 		_whiteCanCastle = move.whiteCanCastle;
 		_blackCanCastle = move.blackCanCastle;
 		_whiteTurn = move.whiteTurn;
-		_halfMoves = move.data[0];
+		_50MoveRule = move.data[0];
 		_fullMoves = move.data[1];
 		_enPassantPosition = move.data[2];
 		_pinnedBitboard = move.pin;

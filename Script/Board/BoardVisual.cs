@@ -18,7 +18,7 @@ public partial class BoardVisual : Node2D
 	[Export] private Color _attackDarkSqaure = Colors.DarkRed;
 	[Export] private Color _attackLighSquare = Colors.Red;
 
-	[Export] private double time;
+	[Export] private double _time;
 	#endregion
 
 	
@@ -30,28 +30,13 @@ public partial class BoardVisual : Node2D
 	
 	//very important
 	private bool _moved = false; //variable is used to update board once a piece is moved
-	const float size = 50f; //Size of One Square of Chess Board in Px
+	const float SIZE = 50f; //Size of One Square of Chess Board in Px
 	Board _board; //Actual Board
 
 	public bool showMoves = false;
 	public int showAttacks = 0;
 	public Board board => _board;
 	
-	public override void _Ready()
-	{
-		_board = new Board();
-		
-		_positionPlaceHolder = GetNode<Marker2D>("Marker");
-		_pieceContainer = GetNode<Node2D>("Marker/Piece");
-		_labelContainer = GetNode<Node2D>("Marker/Labels");
-		_squareContainer = GetNode<Node2D>("Marker/Squares");
-
-		_squareContainer.Position -= _positionPlaceHolder.Position;
-		_pieceContainer.Position -= _positionPlaceHolder.Position;
-		_labelContainer.Position -= _positionPlaceHolder.Position;
-		
-		Generate();
-	}
 	
 	//Generates an Chess Board with initial configuration
 	void Generate(){
@@ -65,8 +50,8 @@ public partial class BoardVisual : Node2D
 					mesh.Modulate = _darkSquares;
 				}
 
-				mesh.GlobalPosition = (_positionPlaceHolder.GlobalPosition.X + size / 2 + size * j) * Vector2.Right +
-									  (_positionPlaceHolder.GlobalPosition.Y + size / 2 + size * i) * Vector2.Down;
+				mesh.GlobalPosition = (_positionPlaceHolder.GlobalPosition.X + SIZE / 2 + SIZE * j) * Vector2.Right +
+									  (_positionPlaceHolder.GlobalPosition.Y + SIZE / 2 + SIZE * i) * Vector2.Down;
 				Label label = _text.Instantiate<Label>();
 				label.Text = (i * 8 + j).ToString();
 				label.GlobalPosition = mesh.GlobalPosition;
@@ -81,6 +66,21 @@ public partial class BoardVisual : Node2D
 		SetBoard();
 	}
 
+	void ShowAttacks()
+	{
+		for (int i = 0; i < 64; ++i)
+		{
+			if ((_board.CurrAttackBitboard & (ulong)1 << i) != 0)
+			{
+				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
+				if (sq.Modulate == _darkSquares)
+					sq.Modulate = _attackDarkSqaure;
+				else if (sq.Modulate == _lightSquares)
+					sq.Modulate = _attackLighSquare;
+			}
+		}
+	}
+	
 	void SetBoard()
 	{
 		for (int i = 0; i < _pieceContainer.GetChildCount(); ++i)
@@ -205,21 +205,6 @@ public partial class BoardVisual : Node2D
 				(item as MeshInstance2D).Modulate = _lightSquares;
 		}
 	}
-
-	void ShowAttacks()
-	{
-		for (int i = 0; i < 64; ++i)
-		{
-			if ((_board.CurrAttackBitboard & (ulong)1 << i) != 0)
-			{
-				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
-				if (sq.Modulate == _darkSquares)
-					sq.Modulate = _attackDarkSqaure;
-				else if (sq.Modulate == _lightSquares)
-					sq.Modulate = _attackLighSquare;
-			}
-		}
-	}
 	
 	public void RefreshBoard()
 	{
@@ -249,7 +234,7 @@ public partial class BoardVisual : Node2D
 	}
 	//Converts board's coordinates to global coordinates
 	public Vector2 BoardPositionToGlobalPosition(Vector2I globalPos){
-		return (_positionPlaceHolder.GlobalPosition.X + size/2 + size * globalPos.X) * Vector2.Right + (_positionPlaceHolder.GlobalPosition.Y  + size/2 + size * globalPos.Y) * Vector2.Down;
+		return (_positionPlaceHolder.GlobalPosition.X + SIZE/2 + SIZE * globalPos.X) * Vector2.Right + (_positionPlaceHolder.GlobalPosition.Y  + SIZE/2 + SIZE * globalPos.Y) * Vector2.Down;
 	}
 	//Convert index of position to board's position
 	public Vector2I IntToBoardPosition(int pos){
@@ -267,6 +252,21 @@ public partial class BoardVisual : Node2D
 	}
 	#endregion
 
+	public override void _Ready()
+	{
+		_board = new Board();
+		
+		_positionPlaceHolder = GetNode<Marker2D>("Marker");
+		_pieceContainer = GetNode<Node2D>("Marker/Piece");
+		_labelContainer = GetNode<Node2D>("Marker/Labels");
+		_squareContainer = GetNode<Node2D>("Marker/Squares");
+
+		_squareContainer.Position -= _positionPlaceHolder.Position;
+		_pieceContainer.Position -= _positionPlaceHolder.Position;
+		_labelContainer.Position -= _positionPlaceHolder.Position;
+		
+		Generate();
+	}
 
 	public override void _Process(double delta)
 	{
@@ -276,23 +276,5 @@ public partial class BoardVisual : Node2D
 			RefreshBoard();
 		}
 	}
-	
-	public async Task NumberOfMoves(int depth)
-	{
-		if (depth == 0)
-			return;
-		List < global::Move > moves = _board.Generator.GenerateMoves();
-		
-		foreach (var move in moves)
-		{
-			_board.MakeMove(move);
-			GD.Print(move.ToString());
-			await ToSignal(GetTree().CreateTimer(time),"timeout");
-			RefreshBoard();
-			await NumberOfMoves(depth - 1);
-			await _board.UnmakeMove(move);
-		}
-	}
 }
 
-//rnbqkbnr/pppp1ppp/1B6/4p3/8/3P4/PPP1PPPP/RN1QKBNR b KQkq - 0 1

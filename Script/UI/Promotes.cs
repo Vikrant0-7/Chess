@@ -30,7 +30,6 @@ public partial class Promotes : VBoxContainer
 	void _OnWhite(long id)
 	{
 		_boardVisual.board.WhitePromoteTo = (int)id + 1;
-		GD.Print(_boardVisual.board.WhitePromoteTo);
 	}
 
 	void _OnBlack(long id)

@@ -10,7 +10,9 @@ public class FenTranslator
     private bool[] _blackCastleStatus;
     private int _enPassantSquare;
     private bool _whiteTurn;
+    private int[] _moves;
     private string _fenString;
+    
 
     public string FenString => _fenString;
     public ulong[] BoardStatus => _boardStatus;
@@ -18,7 +20,7 @@ public class FenTranslator
     public bool[] BlackCastleStatus => _blackCastleStatus;
     public int EnPassantSquare => _enPassantSquare;
     public bool WhiteTurn => _whiteTurn;
-
+    public int[] Moves => _moves;
 
 
     public FenTranslator(string str)
@@ -34,18 +36,24 @@ public class FenTranslator
         _enPassantSquare = ChessNotationToInt(_fenArray[3]);
         _whiteTurn = _fenArray[1].Trim() == "w";
         
+        _moves = new[]
+        {
+            Convert.ToInt32(_fenArray[4]),
+            Convert.ToInt32(_fenArray[5])
+        };
+        
         ProcessBoard();
         ProcessCastle();
     }
     
-    //Todo: Add two last bits and pieces of _fenString;
-    public FenTranslator(ulong[] boardStatus, bool[] whiteCastleStatus, bool[] blackCastleStatus, int enPassantSquare, bool whiteTurn)
+    public FenTranslator(ulong[] boardStatus, bool[] whiteCastleStatus, bool[] blackCastleStatus, int enPassantSquare, bool whiteTurn, int[] moves)
     {
         _boardStatus = boardStatus;
         _whiteCastleStatus = whiteCastleStatus;
         _blackCastleStatus = blackCastleStatus;
         _enPassantSquare = enPassantSquare;
         _whiteTurn = whiteTurn;
+        _moves = moves;
 
         _fenString = "";
 
@@ -53,8 +61,8 @@ public class FenTranslator
         _fenString += ((_whiteTurn) ? "w" : "b") + " ";
         _fenString += GetCastlingString() + " ";
         _fenString += ((enPassantSquare == -1) ? "-" : GetNotation()) + " ";
-        
-        _fenString += "0 1";
+
+        _fenString += _moves[0] + " " + _moves[1];
     }
     string ProcessBoardToFen(){
         string @out = "";
@@ -80,7 +88,6 @@ public class FenTranslator
                 freeSquare = 0;
             }
             else{
-                GD.Print(piece);
                 @out += PieceToAlgebra(piece);
             }
         }

@@ -38,7 +38,8 @@ public partial class Fen : VBoxContainer
 		Board board = _boardVisual.board;
 
 		FenTranslator translator = new FenTranslator(board.BoardStatus, board.GetCastleStatus(0),
-										board.GetCastleStatus(11), board.EnPassantPosition, board.WhiteTurn);
+										board.GetCastleStatus(11), board.EnPassantPosition, board.WhiteTurn, 
+										new []{board.FiftyMoveRule, board.FullMoves});
 		
 		_input.Text = translator.FenString;
 
