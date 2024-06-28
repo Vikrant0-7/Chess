@@ -1,6 +1,9 @@
 using Godot;
 using System;
 
+using Chess.Script.Engine;
+
+
 public partial class Piece : Node2D
 {
 	[Export]
@@ -30,7 +33,7 @@ public partial class Piece : Node2D
 		this._boardPosition = _boardPosition;
 		this._boardVisual = _boardVisual;
 		this.colourType = colourType;
-		GetNode<Sprite2D>("Sprite2D").Texture = textures[(int)colourType];
+		GetNode<Sprite2D>("Sprite2D").Texture = textures[(int)colourType - 1];
 	}
 
 	
@@ -73,7 +76,7 @@ public partial class Piece : Node2D
 				_clickedWhileHovering = false;
 				Vector2I finalPos = _boardVisual.GlobalPositionToBoardPosition(GlobalPosition);
 				
-				_boardVisual.UpdateBoard((int)colourType, _boardPosition, finalPos);
+				_boardVisual.HumanMakeMove((int)colourType, _boardPosition, finalPos);
 				_boardVisual.ResetColors();
 			}
 		}

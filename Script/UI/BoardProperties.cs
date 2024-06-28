@@ -31,7 +31,7 @@ public partial class BoardProperties : VBoxContainer
 
 	void _OnMovesToggled(bool toggled)
 	{
-		if (_visual.showAttacks == 0)
+		if (_visual.pinAttack == 0)
 		{
 			_visual.showMoves = toggled;
 		}
@@ -49,7 +49,7 @@ public partial class BoardProperties : VBoxContainer
 	void _OnAttacksItemSelected(long item)
 	{
 		if(!_visual.showMoves)
-			_visual.showAttacks = (int)item;
+			_visual.pinAttack = (int)item;
 		else
 		{
 			GetNode<OptionButton>("Attacks/OptionButton").Selected = 0;

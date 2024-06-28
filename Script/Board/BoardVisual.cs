@@ -2,6 +2,9 @@ using Godot;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
+using Chess.Script.Engine;
+using Chess.Script.Engine.Moves;
+
 public partial class BoardVisual : Node2D
 {
 	#region Exported Variables
@@ -34,8 +37,10 @@ public partial class BoardVisual : Node2D
 	Board _board; //Actual Board
 
 	public bool showMoves = false;
-	public int showAttacks = 0;
+	public int pinAttack = 0;
 	public Board board => _board;
+	public int WhitePromoteTo = (int)ColourType.WHITE_QUEEN;
+	public int BlackPromoteTo = (int)ColourType.BLACK_QUEEN;
 	
 	
 	//Generates an Chess Board with initial configuration
@@ -68,15 +73,32 @@ public partial class BoardVisual : Node2D
 
 	void ShowAttacks()
 	{
-		for (int i = 0; i < 64; ++i)
+		if (pinAttack == 1)
 		{
-			if ((_board.CurrAttackBitboard & (ulong)1 << i) != 0)
+			for (int i = 0; i < 64; ++i)
 			{
-				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
-				if (sq.Modulate == _darkSquares)
-					sq.Modulate = _attackDarkSqaure;
-				else if (sq.Modulate == _lightSquares)
-					sq.Modulate = _attackLighSquare;
+				if ((_board.CurrAttackBitboard & (ulong)1 << i) != 0)
+				{
+					MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
+					if (sq.Modulate == _darkSquares)
+						sq.Modulate = _attackDarkSqaure;
+					else if (sq.Modulate == _lightSquares)
+						sq.Modulate = _attackLighSquare;
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < 64; ++i)
+			{
+				if ((_board.PinnedBitboard & (ulong)1 << i) != 0)
+				{
+					MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
+					if (sq.Modulate == _darkSquares)
+						sq.Modulate = _attackDarkSqaure;
+					else if (sq.Modulate == _lightSquares)
+						sq.Modulate = _attackLighSquare;
+				}
 			}
 		}
 	}
@@ -88,106 +110,90 @@ public partial class BoardVisual : Node2D
 			_pieceContainer.GetChild(i).QueueFree();
 		}
 		for(int i = 0; i < 64; ++i){
-			Vector2I boardPosition = IntToBoardPosition(i);
+			Vector2I boardPosition = Functions.IntToBoardPosition(i);
 			Vector2 worldPosition = BoardPositionToGlobalPosition(boardPosition);
 				
 			Piece piece = _pieceInstance.Instantiate<Piece>();
 			piece.GlobalPosition = worldPosition;
 
-			if(_board.GetPiece((int)ColourType.WHITE_KING,i)){
-				piece.Init(ColourType.WHITE_KING, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.WHITE_QUEEN,i)){
-				piece.Init(ColourType.WHITE_QUEEN, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.WHITE_ROOK,i)){
-				piece.Init(ColourType.WHITE_ROOK, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.WHITE_BISHOP,i)){
-				piece.Init(ColourType.WHITE_BISHOP, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.WHITE_KNIGHT,i)){
-				piece.Init(ColourType.WHITE_KNIGHT, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.WHITE_PAWN,i)){
-				piece.Init(ColourType.WHITE_PAWN, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.BLACK_KING,i)){
-				piece.Init(ColourType.BLACK_KING, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.BLACK_QUEEN,i)){
-				piece.Init(ColourType.BLACK_QUEEN, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.BLACK_ROOK,i)){
-				piece.Init(ColourType.BLACK_ROOK, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.BLACK_BISHOP,i)){
-				piece.Init(ColourType.BLACK_BISHOP, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.BLACK_KNIGHT,i)){
-				piece.Init(ColourType.BLACK_KNIGHT, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
-			}
-			else if(_board.GetPiece((int)ColourType.BLACK_PAWN,i)){
-				piece.Init(ColourType.BLACK_PAWN, IntToBoardPosition(i), this);
-				_pieceContainer.CallDeferred("add_child",piece);
+			if (board.BoardStatus[i] != (int)ColourType.FREE)
+			{
+				piece.Init((ColourType)_board.BoardStatus[i], Functions.IntToBoardPosition(i), this);
+				_pieceContainer.CallDeferred("add_child", piece);
 			}
 		}
 	}
 
-	public bool UpdateBoard(int pieceIndex, Vector2I initialPosition, Vector2I finalPosition)
+	public bool HumanMakeMove(int pieceIndex, Vector2I initialPosition, Vector2I finalPosition)
 	{
-		bool moveValid = false;
-		moveValid = _board.Move(pieceIndex, BoardPositionToInt(initialPosition), 
-			BoardPositionToInt(finalPosition));
+		Move m;
+		bool legal = false;
+		int promoteTo = -1;
+		
+		if ((pieceIndex - 1) % 6 == (int)ColourType.WHITE_PAWN - 1)
+		{
+			
+			if (pieceIndex == (int)ColourType.WHITE_PAWN && initialPosition.Y == 1)
+				promoteTo = WhitePromoteTo;
+			else if (pieceIndex == (int)ColourType.BLACK_PAWN && initialPosition.Y == 6)
+				promoteTo = BlackPromoteTo;
+		}
+		
+		m = new Move(
+			Functions.BoardPositionToInt(initialPosition),
+			pieceIndex,
+			Functions.BoardPositionToInt(finalPosition),
+			promoteTo
+		);
+		legal = board.Move(m, out _, true);
+
 		_moved = true;
-		return moveValid;
+		
+		return legal;
 	}
 
 	public void ShowMoves(int pieceIndex, Vector2I initialPosition)
 	{
-		if (!showMoves || (_board.WhiteTurn && pieceIndex > 5) || (!_board.WhiteTurn && pieceIndex <= 5))
+		if (!showMoves || (_board.WhiteTurn && pieceIndex > 6) || (!_board.WhiteTurn && pieceIndex <= 6))
 		{
 			return;
 		}
-		List<int> moves = null;
-		Colour c = (pieceIndex > 5) ? Colour.BLACK : Colour.WHITE;
-		if (pieceIndex == 5 || pieceIndex == 11)
-			moves = LegalMoves.Pawn(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, _board.EnPassantPosition, BoardPositionToInt(initialPosition), out _);
-		if(pieceIndex == 4 || pieceIndex == 10)
-			moves = LegalMoves.Knight(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
-		if(pieceIndex == 3 || pieceIndex == 9)
-			moves = LegalMoves.Bishop(c, _board.BoardStatus, _board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
-		if(pieceIndex == 2 || pieceIndex == 8)
-			moves = LegalMoves.Rook(c, _board.BoardStatus,_board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
-		if(pieceIndex == 1 || pieceIndex == 7)
-			moves = LegalMoves.Queen(c, _board.BoardStatus,_board.PinnedBitboard, _board.CurrAttackBitboard, BoardPositionToInt(initialPosition));
-		if(pieceIndex == 0 || pieceIndex == 6)
-			moves = LegalMoves.King(c, _board.BoardStatus, BoardPositionToInt(initialPosition), board.GetCastleStatus(pieceIndex));
-		
+
+		List<Move> moves = null;
+		if ((pieceIndex - 1) % 6 == (int)ColourType.WHITE_PAWN - 1)
+		{
+			moves = LegalMoves.Pawn(
+				_board,
+				Functions.BoardPositionToInt(initialPosition)
+			);
+		}
+		else if ((pieceIndex - 1) % 6 >= (int)ColourType.WHITE_QUEEN - 1 &&
+		         (pieceIndex - 1) % 6 <= (int)ColourType.WHITE_BISHOP - 1)
+		{
+			moves = LegalMoves.SlidingMoves(
+				_board,
+				Functions.BoardPositionToInt(initialPosition),
+				pieceIndex
+			);
+		}
+		else if ((pieceIndex - 1) % 6 >= (int)ColourType.WHITE_KNIGHT - 1)
+		{
+			moves = LegalMoves.Knight(_board, Functions.BoardPositionToInt(initialPosition));
+		}
+		else
+		{
+			moves = LegalMoves.King(_board, Functions.BoardPositionToInt(initialPosition));
+		}
+
 		if (moves != null)
 		{
 			foreach (var item in moves)
 			{
-				if (item < 0 || item >= 64)
-				{
-					continue;
-				}
-				MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(item);
-				if (sq.Modulate == _darkSquares)
-					sq.Modulate = _pathDarkSquare;
-				else if (sq.Modulate == _lightSquares)
-					sq.Modulate = _pathLightSquare;
+				MeshInstance2D mesh = _squareContainer.GetChild<MeshInstance2D>(item.finalPosition);
+				if (mesh.Modulate == _darkSquares)
+					mesh.Modulate = _pathDarkSquare;
+				else if(mesh.Modulate == _lightSquares)
+					mesh.Modulate = _pathLightSquare;
 			}
 		}
 	}
@@ -210,7 +216,7 @@ public partial class BoardVisual : Node2D
 	{
 		ResetColors();
 		SetBoard();
-		if (showAttacks != 0)
+		if (pinAttack != 0)
 		{
 			ShowAttacks();
 		}
@@ -235,20 +241,6 @@ public partial class BoardVisual : Node2D
 	//Converts board's coordinates to global coordinates
 	public Vector2 BoardPositionToGlobalPosition(Vector2I globalPos){
 		return (_positionPlaceHolder.GlobalPosition.X + SIZE/2 + SIZE * globalPos.X) * Vector2.Right + (_positionPlaceHolder.GlobalPosition.Y  + SIZE/2 + SIZE * globalPos.Y) * Vector2.Down;
-	}
-	//Convert index of position to board's position
-	public Vector2I IntToBoardPosition(int pos){
-		return new Vector2I(pos % 8, pos/8);
-	}
-	//Converts board's position to index of that position
-	public int BoardPositionToInt(int x, int y)
-	{
-		return y * 8 + x;
-	}
-
-	public int BoardPositionToInt(Vector2I pos)
-	{
-		return pos.Y * 8 + pos.X;
 	}
 	#endregion
 

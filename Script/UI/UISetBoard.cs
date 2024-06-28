@@ -1,6 +1,6 @@
 using Godot;
 using System;
-
+using Chess.Script.Engine;
 public partial class UISetBoard : VBoxContainer
 {
     [Export] private NodePath boardNodePath;
@@ -60,7 +60,7 @@ public partial class UISetBoard : VBoxContainer
             _textureRect.Texture = textures[_colour * 6 + type];
         else
             _textureRect.Texture = null;
-        _type = type;
+        _type = type + 1;
     }
     
     void _OnSetPressed()
@@ -68,9 +68,13 @@ public partial class UISetBoard : VBoxContainer
         if(!settingBoard.ButtonPressed)
             return;
         _boardVisual.board.SetCastlingState(
-        new []{whiteCastle[0].ButtonPressed, whiteCastle[1].ButtonPressed},
-        new []{blackCastle[0].ButtonPressed, blackCastle[1].ButtonPressed}
+        true, whiteCastle[0].ButtonPressed, whiteCastle[1].ButtonPressed
         );
+        
+        _boardVisual.board.SetCastlingState(
+            false,blackCastle[0].ButtonPressed, blackCastle[1].ButtonPressed
+            );
+        
         _boardVisual.board.WhiteTurn = whiteTurn.ButtonPressed;
 
         SetType(-1);
@@ -107,9 +111,9 @@ public partial class UISetBoard : VBoxContainer
                 return;
             if(position.Y < 0 || position.Y > 7)
                 return;
-            int ipos = _boardVisual.BoardPositionToInt(position);
+            int ipos = Functions.BoardPositionToInt(position);
             
-            _boardVisual.board.SetBoardPosition(ipos,_boardVisual.board.GetIndex(_type,_colour));
+            _boardVisual.board.SetBoardPosition(ipos,_colour * 6 + _type);
             _boardVisual.RefreshBoard();
         }
         

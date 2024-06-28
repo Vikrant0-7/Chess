@@ -1,6 +1,8 @@
 using Godot;
 using System;
 
+using Chess.Script.Engine;
+
 public partial class Fen : VBoxContainer
 {
 	[Export] private NodePath _boardNodePath;
@@ -37,9 +39,10 @@ public partial class Fen : VBoxContainer
 	{
 		Board board = _boardVisual.board;
 
-		FenTranslator translator = new FenTranslator(board.BoardStatus, board.GetCastleStatus(0),
-										board.GetCastleStatus(11), board.EnPassantPosition, board.WhiteTurn, 
-										new []{board.FiftyMoveRule, board.FullMoves});
+		FenTranslator translator = new FenTranslator(board.BoardStatus, 
+			(byte)(board.GetCastleStatus(true) | 
+			          (board.GetCastleStatus(false) << 4)), 
+			board.EnPassantPosition, board.WhiteTurn, new []{board.FiftyMoveRule, board.FullMoves});
 		
 		_input.Text = translator.FenString;
 

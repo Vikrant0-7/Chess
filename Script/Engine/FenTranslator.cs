@@ -1,11 +1,13 @@
 ﻿using System;
 using Godot;
 
+namespace Chess.Script.Engine;
+
 public class FenTranslator
 {
     private string[] _fenArray;
     
-    private ulong[] _boardStatus;
+    private int[] _boardStatus;
     private bool[] _whiteCastleStatus;
     private bool[] _blackCastleStatus;
     private int _enPassantSquare;
@@ -15,7 +17,7 @@ public class FenTranslator
     
 
     public string FenString => _fenString;
-    public ulong[] BoardStatus => _boardStatus;
+    public int[] BoardStatus => _boardStatus;
     public bool[] WhiteCastleStatus => _whiteCastleStatus;
     public bool[] BlackCastleStatus => _blackCastleStatus;
     public int EnPassantSquare => _enPassantSquare;
@@ -30,7 +32,7 @@ public class FenTranslator
         if (_fenArray.Length != 6)
             throw new Exception("Invalid Format for Fen String");
         
-        _boardStatus = new ulong[12];
+        _boardStatus = new int[64];
         _whiteCastleStatus = new bool[2];
         _blackCastleStatus = new bool[2];
         _enPassantSquare = ChessNotationToInt(_fenArray[3]);
@@ -46,11 +48,12 @@ public class FenTranslator
         ProcessCastle();
     }
     
-    public FenTranslator(ulong[] boardStatus, bool[] whiteCastleStatus, bool[] blackCastleStatus, int enPassantSquare, bool whiteTurn, int[] moves)
+    public FenTranslator(int[] boardStatus, byte castleStatus, int enPassantSquare, bool whiteTurn, int[] moves)
     {
         _boardStatus = boardStatus;
-        _whiteCastleStatus = whiteCastleStatus;
-        _blackCastleStatus = blackCastleStatus;
+        _whiteCastleStatus = new[] { (castleStatus & 0b10) != 0, (castleStatus & 0b01) != 0 };
+        _blackCastleStatus = new[] { ((castleStatus >> 4) & 0b10) != 0, 
+                                     ((castleStatus >> 4) & 0b01) != 0 };
         _enPassantSquare = enPassantSquare;
         _whiteTurn = whiteTurn;
         _moves = moves;
@@ -68,8 +71,9 @@ public class FenTranslator
         string @out = "";
         int freeSquare = 0;
 
-        for(int i = 0; i < 64; ++i){
-            int piece = GetPiece(i);
+        for(int i = 0; i < 64; ++i)
+        {
+            int piece = _boardStatus[i];
 
             if(i % 8 == 0 && i != 0){
                 if(freeSquare > 0){
@@ -78,18 +82,19 @@ public class FenTranslator
                 }
                 @out += "/";
             }
-            if(piece == -1){
+            if(piece == (int)ColourType.FREE){
                 ++freeSquare;
+                if (i == 63)
+                    @out += freeSquare.ToString();
                 continue;
             }
             if(freeSquare > 0){
                 @out += freeSquare.ToString();
-                @out += PieceToAlgebra(piece);
                 freeSquare = 0;
             }
-            else{
-                @out += PieceToAlgebra(piece);
-            }
+
+            @out += PieceToAlgebra(piece);
+            
         }
         return @out;
     }
@@ -104,17 +109,19 @@ public class FenTranslator
             if (pos == '/')
                 continue;
             int info = GetIndex(pos);
-            if (info != -1)
+            if (info != (int)ColourType.FREE)
             {
-                _boardStatus[info] |= GetBit(boardPosition);
-                ++boardPosition;
+                _boardStatus[boardPosition++] = info;
             }
             else
             {
                 info = ToDigit(pos);
                 if (info == -1)
                     throw new Exception("Invalid Fen Format");
-                boardPosition += info;
+                for (int i = 0; i < info; ++i)
+                {
+                    _boardStatus[boardPosition++] = (int)ColourType.FREE;
+                }
             }
         }
     }
@@ -136,55 +143,37 @@ public class FenTranslator
 
     int GetIndex(char c)
     {
-        int idx = -1;
-        
         switch (c)
         {
             case 'K':
-                idx = 0;
-                break;
+                return (int)ColourType.WHITE_KING;
             case 'Q':
-                idx = 1;
-                break;
+                return (int)ColourType.WHITE_QUEEN;
             case 'R':
-                idx = 2;
-                break;
+                return (int)ColourType.WHITE_ROOK;
             case 'B':
-                idx = 3;
-                break;
+                return (int)ColourType.WHITE_BISHOP;
             case 'N':
-                idx = 4;
-                break;
+                return (int)ColourType.WHITE_KNIGHT;
             case 'P':
-                idx = 5;
-                break;
+                return (int)ColourType.WHITE_PAWN;
             
             case 'k':
-                idx = 6;
-                break;
+                return (int)ColourType.BLACK_KING;
             case 'q':
-                idx = 7;
-                break;
+                return (int)ColourType.BLACK_QUEEN;
             case 'r':
-                idx = 8;
-                break;
+                return (int)ColourType.BLACK_ROOK;
             case 'b':
-                idx = 9;
-                break;
+                return (int)ColourType.BLACK_BISHOP;
             case 'n':
-                idx = 10;
-                break;
+                return (int)ColourType.BLACK_KNIGHT;
             case 'p':
-                idx = 11;
-                break;
+                return (int)ColourType.BLACK_PAWN;
+            
+            default:
+                return (int)ColourType.FREE;
         }
-        
-        return idx;
-    }
-
-    ulong GetBit(int pos)
-    {
-        return (ulong)1 << pos;
     }
 
     int ToDigit(char c)
@@ -206,18 +195,7 @@ public class FenTranslator
     }
 
     char PieceToAlgebra(int piece){
-        return "KQRBNPkqrbnp"[piece];
-    }
-
-    int GetPiece(int pos){
-        int @out = -1;
-        for(int i = 0; i < 12; ++i){
-            if((_boardStatus[i] & GetBit(pos)) != 0){
-                @out = i;
-                break;
-            }
-        }
-        return @out;
+        return " KQRBNPkqrbnp"[piece];
     }
     
     String GetCastlingString()

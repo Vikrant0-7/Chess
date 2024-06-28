@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
+using Chess.Script.Engine;
+
+
 public partial class UILegalMoves : VBoxContainer
 {
 	[Export] private NodePath _boardPath;

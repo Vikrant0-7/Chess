@@ -123,7 +123,7 @@ layout_mode = 2
 
 [node name="Label2" type="Label" parent="CanvasLayer/Control/Debug/Attacks"]
 layout_mode = 2
-text = "Show Attacks"
+text = "Attack/Pin"
 
 [node name="VSeparator2" type="VSeparator" parent="CanvasLayer/Control/Debug/Attacks"]
 layout_mode = 2
@@ -135,9 +135,9 @@ selected = 0
 allow_reselect = true
 popup/item_0/text = "None"
 popup/item_0/id = 0
-popup/item_1/text = "White"
+popup/item_1/text = "Attack"
 popup/item_1/id = 1
-popup/item_2/text = "Black"
+popup/item_2/text = "Pin"
 popup/item_2/id = 2
 
 [node name="Refresh" type="Button" parent="CanvasLayer/Control/Debug"]
@@ -463,13 +463,13 @@ layout_mode = 2
 item_count = 4
 selected = 0
 popup/item_0/text = "Queen"
-popup/item_0/id = 1
+popup/item_0/id = 0
 popup/item_1/text = "Rook"
-popup/item_1/id = 2
+popup/item_1/id = 1
 popup/item_2/text = "Bishop"
-popup/item_2/id = 3
+popup/item_2/id = 2
 popup/item_3/text = "Knight"
-popup/item_3/id = 4
+popup/item_3/id = 3
 
 [node name="Label2" type="Label" parent="CanvasLayer/Control/Promotes"]
 layout_mode = 2
@@ -480,13 +480,13 @@ layout_mode = 2
 item_count = 4
 selected = 0
 popup/item_0/text = "Queen"
-popup/item_0/id = 1
+popup/item_0/id = 0
 popup/item_1/text = "Rook"
-popup/item_1/id = 2
+popup/item_1/id = 1
 popup/item_2/text = "Bishop"
-popup/item_2/id = 3
+popup/item_2/id = 2
 popup/item_3/text = "Knight"
-popup/item_3/id = 4
+popup/item_3/id = 3
 
 [node name="MeshInstance2D" type="MeshInstance2D" parent="."]
 visible = false

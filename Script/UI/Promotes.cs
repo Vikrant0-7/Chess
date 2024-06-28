@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using Chess.Script.Engine;
 
 public partial class Promotes : VBoxContainer
 {
@@ -7,34 +8,54 @@ public partial class Promotes : VBoxContainer
 
 	private BoardVisual _boardVisual;
 
-	private OptionButton white;
+	private OptionButton _white;
 
-	private OptionButton black;
+	private OptionButton _black;
 	
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		_boardVisual = GetNode<BoardVisual>(_boardNodePath);
-		white = GetNode<OptionButton>("OptionButton");
-		black = GetNode<OptionButton>("OptionButton3");
-
+		_white = GetNode<OptionButton>("OptionButton");
+		_black = GetNode<OptionButton>("OptionButton3");
 	}
 
 
 	public override void _PhysicsProcess(double delta)
 	{
-		_boardVisual.board.WhitePromoteTo = white.Selected + 1;
-		_boardVisual.board.BlackPromoteTo = black.Selected + 1;
+		if (_white.Selected == 0)
+		{
+			_boardVisual.WhitePromoteTo = (int)ColourType.WHITE_QUEEN;
+		}
+		else if (_white.Selected == 1)
+		{
+			_boardVisual.WhitePromoteTo = (int)ColourType.WHITE_ROOK;
+		}
+		else if (_white.Selected == 2)
+		{
+			_boardVisual.WhitePromoteTo = (int)ColourType.WHITE_BISHOP;
+		}
+		else if (_white.Selected == 3)
+		{
+			_boardVisual.WhitePromoteTo = (int)ColourType.WHITE_KNIGHT;
+		}
+		
+		if (_black.Selected == 0)
+		{
+			_boardVisual.BlackPromoteTo = (int)ColourType.BLACK_QUEEN;
+		}
+		else if (_black.Selected == 1)
+		{
+			_boardVisual.BlackPromoteTo = (int)ColourType.BLACK_ROOK;
+		}
+		else if (_black.Selected == 2)
+		{
+			_boardVisual.BlackPromoteTo = (int)ColourType.BLACK_BISHOP;
+		}
+		else if (_black.Selected == 3)
+		{
+			_boardVisual.BlackPromoteTo = (int)ColourType.BLACK_KNIGHT;
+		}
 	}
-
-	void _OnWhite(long id)
-	{
-		_boardVisual.board.WhitePromoteTo = (int)id + 1;
-	}
-
-	void _OnBlack(long id)
-	{
-		_boardVisual.board.BlackPromoteTo = (int)id + 1;
-
-	}
+	
 }
