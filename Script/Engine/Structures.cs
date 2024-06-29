@@ -3,7 +3,7 @@ using System.Threading;
 using System;
 
 namespace Chess.Script.Engine;
-//Todo: To reduce time complexity of move may be store captures so that that piece can be revived.
+//Todo: Learn and implement Zobrist hashing to reduce time complexity of move generation.
 public struct Move
 {
 
@@ -52,4 +52,13 @@ public struct NoOfMovesThreadData<T>
         this.callback = callback;
         this.parameter = parameter;
     }
+}
+
+public class MoveData
+{
+    public Move move;
+    public int[] boardStatus;
+    public ulong[] bitboards;
+    public int[] data;
+    public bool whiteTurn;
 }

@@ -31,7 +31,7 @@ public static class Functions
         angle = Mathf.Clamp(angle,-1,1);
         
         angle = Mathf.Acos(angle);
-        return (Mathf.IsEqualApprox(angle, 180 / Mathf.Pi) || Mathf.IsZeroApprox(angle)) ;
+        return (Mathf.IsEqualApprox(angle, Mathf.Pi) || Mathf.IsZeroApprox(angle)) ;
     }
     
     /// <summary>

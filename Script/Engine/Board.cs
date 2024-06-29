@@ -10,32 +10,24 @@ using Chess.Script.Engine.Moves;
 namespace Chess.Script.Engine;
 
 //TODO: Add check for mate condition.
-//TODO: Migrate to hybrid representation of board
-/* Ultimate goal is to fully migrate to board oriented representation, which is
- * how we see the chess board. Method Currently in use is piece oriented representation
- * in which bitboard of each piece is stored. Board Oriented is more intutive than piece
- * oriented but is more memory heavy 96 bytes (in piece oriented) vs 256 bytes (in board oriented).
- * Need to migrate is that currently all my algorithms are Board oriented and translation between two is
- * added overhead.
- */
+
 public class Board
 {
 	private int[] _boardStatus;
 	private int _enPassantPosition;
-
 	private bool _whiteTurn = true;
-
 	private int _castleStatus;
-	// 0 -> Queen Side Castle
-	// 1 -> King Side Castle
 
 	private MoveGenerator _moveGenerator;
 	private int _50MoveRule;
 	private int _fullMoves;
-
+	private int _whiteKingPosition;
+	private int _blackKingPosition;
 
 	private ulong _pinnedBitboard;
 	private ulong _attackBitboard;
+	private ulong _checkBitboard;
+	
 
 	public int EnPassantPosition => _enPassantPosition;
 	public int[] BoardStatus => _boardStatus;
@@ -58,9 +50,13 @@ public class Board
 		get => _whiteTurn;
 	}
 
+	public int WhiteKingPosition => _whiteKingPosition;
+	public int BlackKingPosition => _blackKingPosition;
+
 	public ulong PinnedBitboard => _pinnedBitboard;
 	public ulong CurrAttackBitboard => _attackBitboard;
-
+	public ulong CheckBitboard => _checkBitboard;
+	
 	public Board()
 	{
 		PrecomputedMoves.Init();
@@ -159,6 +155,11 @@ public class Board
 
 			_boardStatus[move.position] = (int)ColourType.FREE;
 			_boardStatus[move.finalPosition] = move.piece;
+
+			if (move.piece == (int)ColourType.WHITE_KING)
+				_whiteKingPosition = move.finalPosition;
+			else
+				_blackKingPosition = move.finalPosition;
 			
 			return true;
 		}
@@ -228,6 +229,10 @@ public class Board
 			_boardStatus[position] = (int)ColourType.FREE;
 		else
 			_boardStatus[position] = piece;
+		
+		_pinnedBitboard = Bitboard.Pins(_whiteTurn ? 0 : 1, _boardStatus);
+		_attackBitboard = Bitboard.Attacks(!_whiteTurn, _boardStatus);
+		_checkBitboard = Bitboard.Checks(_whiteTurn, _boardStatus);
 	}
 
 	public void CleanBoard()
@@ -256,10 +261,30 @@ public class Board
 		SetCastlingState(false,fen.BlackCastleStatus[0],fen.BlackCastleStatus[1]);
 		_whiteTurn = fen.WhiteTurn;
 		_enPassantPosition = fen.EnPassantSquare;
-		_pinnedBitboard = PinBitboard.GetPinnedPositions(_whiteTurn ? 0 : 1, _boardStatus);
-		_attackBitboard = AttackBitboard.GetAttackBitBoard(!_whiteTurn, _boardStatus);
+		_pinnedBitboard = Bitboard.Pins(_whiteTurn ? 0 : 1, _boardStatus);
+		_attackBitboard = Bitboard.Attacks(!_whiteTurn, _boardStatus);
+		_checkBitboard = Bitboard.Checks(_whiteTurn, _boardStatus);
 		_50MoveRule = fen.Moves[0];
 		_fullMoves = fen.Moves[1];
+
+		int b = 0;
+		for (int i = 0; i < 64; ++i)
+		{
+			if (_boardStatus[i] == (int)ColourType.WHITE_KING)
+			{
+				_whiteKingPosition = i;
+				++b;
+			}
+			else if (_boardStatus[i] == (int)ColourType.BLACK_KING)
+			{
+				_blackKingPosition = i;
+				++b;
+			}
+			
+			if(b == 2)
+				break;
+		}
+		
 	}
 
 	public bool Move(Move move, out bool capture, bool checkLegal = true)
@@ -285,7 +310,6 @@ public class Board
 
 		if (valid)
 		{
-			_attackBitboard = AttackBitboard.GetAttackBitBoard(_whiteTurn, _boardStatus);
 			
 			_whiteTurn = !_whiteTurn;
 			if ((move.piece - 1) % 6 != (int)ColourType.WHITE_PAWN - 1)
@@ -293,21 +317,71 @@ public class Board
 				_enPassantPosition = -1;
 			}
 
-			_pinnedBitboard = PinBitboard.GetPinnedPositions(_whiteTurn ? 0 : 1, _boardStatus);
+			++_50MoveRule;
+			if (move.piece == (int)ColourType.WHITE_PAWN ||
+			    move.piece == (int)ColourType.BLACK_PAWN ||
+			    capture)
+			{
+				_50MoveRule = 0;
+			}
+
+			if (_whiteTurn)
+				++FullMoves;
+			
+			_attackBitboard = Bitboard.Attacks(!_whiteTurn, _boardStatus);
+			_pinnedBitboard = Bitboard.Pins(_whiteTurn ? 0 : 1, _boardStatus);
+			_checkBitboard = Bitboard.Checks(_whiteTurn, _boardStatus);
 
 		}
 		
 		return valid;
 	}
 	
-	public void MakeMove(Move move)
+	public MoveData MakeMove(Move move)
 	{
+		MoveData d = new MoveData();
+		d.move = move;
+		d.boardStatus = (int[])_boardStatus.Clone();
+
+		d.bitboards = new[] { _attackBitboard, _pinnedBitboard, _checkBitboard };
+		d.data = new[]
+		{
+			_enPassantPosition,
+			_castleStatus,
+			_50MoveRule,
+			_fullMoves,
+			_whiteKingPosition,
+			_blackKingPosition
+		};
+
+		d.whiteTurn = WhiteTurn;
 		
+		Move(move, out _, false);
+		return d;
+
 	}
 
-	public void UnmakeMove(Move move)
+	public void UnmakeMove(MoveData move)
 	{
-		
+		_boardStatus = move.boardStatus;
+		(_attackBitboard, _pinnedBitboard, _checkBitboard) = 
+			(move.bitboards[0], move.bitboards[1], move.bitboards[2]);
+		_whiteTurn = move.whiteTurn;
+		(
+			_enPassantPosition,
+			_castleStatus,
+			_50MoveRule,
+			_fullMoves,
+			_whiteKingPosition,
+			_blackKingPosition
+		) = (
+			move.data[0],
+			move.data[1],
+			move.data[2],
+			move.data[3],
+			move.data[4],
+			move.data[5]
+		);
 	}
 
 public void RequestNoOfMoves(int depth, Action<int> callback, Queue<NoOfMovesThreadData<int>> queue)
@@ -329,15 +403,17 @@ public void RequestNoOfMoves(int depth, Action<int> callback, Queue<NoOfMovesThr
 	{
 		if (depth == 0)
 			return 1;
+		
 		List <Move> moves = _moveGenerator.GenerateMoves();
 		int noOfPosition = 0;
 		
 		
 		foreach (var move in moves)
 		{
-			MakeMove(move);
+			MoveData m = MakeMove(move);
+			// GD.Print(move);
 			noOfPosition += NumberOfMoves(depth - 1);
-			UnmakeMove(move);
+			UnmakeMove(m);
 		}
 
 		return noOfPosition;

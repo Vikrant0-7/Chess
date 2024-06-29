@@ -7,12 +7,9 @@ using Chess.Script.Engine.Moves;
 namespace Chess.Script.Engine.Bitboards;
 
 
-public static class AttackBitboard
+public static partial class Bitboard
 {
-    
-    
-    
-    public static ulong GetAttackBitBoard(bool whiteAttacks, int[] boardStatus)
+    public static ulong Attacks(bool whiteAttacks, int[] boardStatus)
     {
         ulong attack = 0;
 
@@ -90,8 +87,15 @@ public static class AttackBitboard
                 int occupation = Functions.IsPieceFriendly(isWhite, boardStatus[legalPos]);
 
                 attack |= Functions.GetBit(legalPos);
-                if(occupation != -1)
-                    break;
+                if (occupation != -1)
+                {
+                    if (isWhite && boardStatus[legalPos] == (int)ColourType.BLACK_KING) { }
+                    else if (!isWhite && boardStatus[legalPos] == (int)ColourType.WHITE_KING) { }
+                    else
+                    {
+                        break;
+                    }
+                }
 
                 legalPos += dir;
             }

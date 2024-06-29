@@ -58,7 +58,7 @@ public partial class BoardVisual : Node2D
 				mesh.GlobalPosition = (_positionPlaceHolder.GlobalPosition.X + SIZE / 2 + SIZE * j) * Vector2.Right +
 									  (_positionPlaceHolder.GlobalPosition.Y + SIZE / 2 + SIZE * i) * Vector2.Down;
 				Label label = _text.Instantiate<Label>();
-				label.Text = (i * 8 + j).ToString();
+				label.Text = "abcdefgh"[j].ToString() + "87654321"[i];
 				label.GlobalPosition = mesh.GlobalPosition;
 				label.ZIndex = 100;
 				_labelContainer.CallDeferred("add_child", label);
@@ -87,11 +87,25 @@ public partial class BoardVisual : Node2D
 				}
 			}
 		}
-		else
+		else if(pinAttack == 2)
 		{
 			for (int i = 0; i < 64; ++i)
 			{
 				if ((_board.PinnedBitboard & (ulong)1 << i) != 0)
+				{
+					MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
+					if (sq.Modulate == _darkSquares)
+						sq.Modulate = _attackDarkSqaure;
+					else if (sq.Modulate == _lightSquares)
+						sq.Modulate = _attackLighSquare;
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < 64; ++i)
+			{
+				if ((_board.CheckBitboard & (ulong)1 << i) != 0)
 				{
 					MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
 					if (sq.Modulate == _darkSquares)

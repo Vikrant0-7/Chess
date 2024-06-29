@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Chess.Script.Engine.Bitboards;
 
-public static class PinBitboard
+public static partial class Bitboard 
 {
     static ulong Bishop(int colour, int bPos, int kPos, int[] board)
     {
@@ -123,7 +123,7 @@ public static class PinBitboard
     }
     
 
-    public static ulong GetPinnedPositions(int colour, int[] board) //colour 0 means find pinned piece of white
+    public static ulong Pins(int colour, int[] board) //colour 0 means find pinned piece of white
     {
         ulong possiblePin = 0;
 

@@ -130,7 +130,7 @@ layout_mode = 2
 
 [node name="OptionButton" type="OptionButton" parent="CanvasLayer/Control/Debug/Attacks"]
 layout_mode = 2
-item_count = 3
+item_count = 4
 selected = 0
 allow_reselect = true
 popup/item_0/text = "None"
@@ -139,6 +139,8 @@ popup/item_1/text = "Attack"
 popup/item_1/id = 1
 popup/item_2/text = "Pin"
 popup/item_2/id = 2
+popup/item_3/text = "Checks"
+popup/item_3/id = 3
 
 [node name="Refresh" type="Button" parent="CanvasLayer/Control/Debug"]
 layout_mode = 2
