@@ -22,6 +22,8 @@ public partial class Piece : Node2D
 	private Vector2I _boardPosition;
 	private BoardVisual _boardVisual;
 
+	private bool isWhite;
+
 	public Vector2I BoardPosition
 	{
 		get => _boardPosition;
@@ -30,10 +32,13 @@ public partial class Piece : Node2D
 	// Called when the node enters the scene tree for the first time.
 	public void Init(ColourType colourType, Vector2I _boardPosition, BoardVisual _boardVisual)
 	{
+		Name = new StringName(Functions.BoardPositionToInt(this._boardPosition).ToString());
 		this._boardPosition = _boardPosition;
 		this._boardVisual = _boardVisual;
 		this.colourType = colourType;
 		GetNode<Sprite2D>("Sprite2D").Texture = textures[(int)colourType - 1];
+		Position = new Vector2(_boardPosition.X, _boardPosition.Y) * _boardVisual.SIZE;
+		isWhite = (int)this.colourType <= (int)ColourType.WHITE_PAWN;
 	}
 
 	
@@ -47,6 +52,13 @@ public partial class Piece : Node2D
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+		
+		if(_boardVisual.board.WhiteTurn != isWhite)
+			return;
+		
+		if(_boardVisual.AiIsWhite == isWhite)
+			return;
+		
 		if (_isDragging && _mouseOver)
 		{
 			if (!_dragginStart)

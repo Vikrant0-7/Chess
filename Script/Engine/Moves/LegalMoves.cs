@@ -44,43 +44,17 @@ public class LegalMoves
         List<Move> moves = new List<Move>();
         int modifier = (isWhite) ? -1 : 1;
         Vector2I pos = Functions.IntToBoardPosition(from);
-        Vector2I kpos = Functions.IntToBoardPosition(
-            isWhite ? board.WhiteKingPosition : board.BlackKingPosition);
 
         bool blocked = true;
         int testPos = Functions.BoardPositionToInt(pos.X, pos.Y + modifier);
         int piece = isWhite ? (int)ColourType.WHITE_PAWN : (int)ColourType.BLACK_PAWN;
-
-        bool isPinned = (board.PinnedBitboard & Functions.GetBit(from)) != 0;
-        bool isUnderCheck = (board.CurrAttackBitboard & 
-                             Functions.GetBit(
-                                 isWhite ? board.WhiteKingPosition : board.BlackKingPosition
-                             )) != 0;
         
-        ulong checkBitboard = board.CheckBitboard;
-
-        if (isUnderCheck && checkBitboard == Bitboard.MultiAttacker)
-            return moves;
         
         
         if (boardStatus[testPos] == (int)ColourType.FREE)
         {
-            if (isPinned)
-            {
-                Vector2I newPos = Functions.IntToBoardPosition(testPos);
-
-                if (Functions.MoveIsInDirection(newPos.X - pos.X, newPos.Y - pos.Y, kpos - pos))
-                {
-                    if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                        AddMove(from, pos, isWhite, moves, piece, testPos);
-                }
-            }
-            else
-            {
-                if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                    AddMove(from, pos, isWhite, moves, piece, testPos);
-            }
-
+            AddMove(from, pos, isWhite, moves, piece, testPos);
+            
             blocked = false;
         }
 
@@ -89,67 +63,24 @@ public class LegalMoves
             testPos = Functions.BoardPositionToInt(pos.X, pos.Y + 2 * modifier);
             if (boardStatus[testPos] == (int)ColourType.FREE)
             {
-                if (isPinned)
-                {
-                    Vector2I newPos = Functions.IntToBoardPosition(testPos);
-
-                    if (Functions.MoveIsInDirection(newPos.X - pos.X, newPos.Y - pos.Y, kpos - pos))
-                    {
-                        if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                            moves.Add(new Move(from, piece,testPos));
-                    }
-                }
-                else
-                {
-                    if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                        moves.Add(new Move(from, piece,testPos));
-                }
+                moves.Add(new Move(from, piece, testPos));
             }
         }
 
         foreach (var item in PrecomputedMoves.PawnAttacks[from])
         {
             testPos = item + modifier * 8;
-            
+
             if (Functions.IsPieceFriendly(isWhite, boardStatus[testPos]) == 0)
             {
-                if (isPinned)
-                {
-                    Vector2I newPos = Functions.IntToBoardPosition(testPos);
-
-                    if (Functions.MoveIsInDirection(newPos.X - pos.X, newPos.Y - pos.Y, kpos - pos))
-                    {
-                        if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                            AddMove(from, pos, isWhite, moves, piece, testPos);
-                    }
-                }
-                else
-                {
-                    if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                        AddMove(from, pos, isWhite, moves, piece, testPos);
-                }
+                AddMove(from, pos, isWhite, moves, piece, testPos);
             }
 
             if (pos.Y == (isWhite ? 3 : 4) && testPos == enPassantSquare)
             {
                 if (Functions.IsPieceFriendly(isWhite, boardStatus[testPos]) == -1)
                 {
-                    if (isPinned)
-                    {
-                        Vector2I newPos = Functions.IntToBoardPosition(testPos);
-
-                        if (Functions.MoveIsInDirection(newPos.X - pos.X, newPos.Y - pos.Y, kpos - pos))
-                        {
-                            if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                                moves.Add(new Move(from, piece,testPos));
-                        }
-                    }
-                    else
-                    {
-                        if(!isUnderCheck || (checkBitboard & Functions.GetBit(testPos)) != 0)
-                            moves.Add(new Move(from, piece,testPos));
-                    }
-                    
+                    moves.Add(new Move(from, piece, testPos));
                 }
             }
         }
@@ -220,8 +151,7 @@ public class LegalMoves
         }
         */
         
-        return moves;
-
+        return RemoveIllegal(moves, board);
     }
 
     public static List<Move> SlidingMoves(Board board, int from, int pieceIdx)
@@ -240,21 +170,6 @@ public class LegalMoves
         if (piece == (int)ColourType.WHITE_ROOK - 1)
             dirIdx += 4;
         
-        bool isPinned = (board.PinnedBitboard & Functions.GetBit(from)) != 0;
-        bool isUnderCheck = (board.CurrAttackBitboard & 
-                             Functions.GetBit(
-                                 isWhite ? board.WhiteKingPosition : board.BlackKingPosition
-                             )) != 0;
-        
-        ulong checkBitboard = board.CheckBitboard;
-
-        Vector2I kpos = Functions.IntToBoardPosition(
-            isWhite ? board.WhiteKingPosition : board.BlackKingPosition);
-        Vector2I pos = Functions.IntToBoardPosition(from);
-        
-        if (isUnderCheck && checkBitboard == Bitboard.MultiAttacker)
-            return moves;
-        
         for (; dirIdx < lastDir; ++dirIdx)
         {
             int dir = PrecomputedMoves.Direction[dirIdx];
@@ -267,22 +182,9 @@ public class LegalMoves
                 int occupation = Functions.IsPieceFriendly(isWhite, boardStatus[legalPos]);
                 if (occupation == 1) 
                     break;
-
-                if (isPinned)
-                {
-                    Vector2I newPos = Functions.IntToBoardPosition(legalPos);
-
-                    if (Functions.MoveIsInDirection(newPos.X - pos.X, newPos.Y - pos.Y, kpos - pos))
-                    {
-                        if(!isUnderCheck || (checkBitboard & Functions.GetBit(legalPos)) != 0)
-                            moves.Add(new Move(from, pieceIdx,legalPos));
-                    }
-                }
-                else
-                {
-                    if(!isUnderCheck || (checkBitboard & Functions.GetBit(legalPos)) != 0)
-                        moves.Add(new Move(from, pieceIdx,legalPos));
-                }
+                
+                moves.Add(new Move(from, pieceIdx,legalPos));
+                
                 
                 if(occupation == 0)
                     break;
@@ -290,7 +192,7 @@ public class LegalMoves
                 legalPos += dir;
             }
         }
-        return moves;
+        return RemoveIllegal(moves, board);
     }
 
     public static List<Move> Knight(Board board, int from)
@@ -302,28 +204,15 @@ public class LegalMoves
 
         int piece = isWhite ? (int)ColourType.WHITE_KNIGHT : (int)ColourType.BLACK_KNIGHT;
 
-        bool isPinned = (board.PinnedBitboard & Functions.GetBit(from)) != 0;
-        bool isUnderCheck = (board.CurrAttackBitboard & 
-                             Functions.GetBit(
-                                 isWhite ? board.WhiteKingPosition : board.BlackKingPosition
-                             )) != 0;
-        ulong checkBitboard = board.CheckBitboard;
-
-        if (isPinned)
-            return moves;
-        
-        if (isUnderCheck && checkBitboard == Bitboard.MultiAttacker)
-            return moves;
         
         foreach (var item in PrecomputedMoves.KnightMoves[from])
         {
             if(Functions.IsPieceFriendly(isWhite, boardStatus[item]) == 1)
                 continue;
-            if(!isUnderCheck || (checkBitboard & Functions.GetBit(item)) != 0)
-                moves.Add(new Move(from, piece, item));
+            moves.Add(new Move(from, piece, item));
         }
         
-        return moves;
+        return RemoveIllegal(moves, board);
     }
 
     public static List<Move> King(Board board, int from)
@@ -345,7 +234,84 @@ public class LegalMoves
                 moves.Add(new Move(from, piece, item));
         }
 
-        return moves;
+        int castle = board.GetCastleStatus(isWhite);
+
+        bool kingSide = (castle & 0b01) != 0;
+        bool queenSide = (castle & 0b10) != 0;
+        
+
+        if (kingSide)
+        {
+            if (boardStatus[from + 1] == 0 && boardStatus[from + 2] == 0)
+            {
+                if((attack & ( Functions.GetBit(from) | Functions.GetBit(from + 1) | Functions.GetBit(from + 2) )) == 0)
+                {
+                    if (boardStatus[from + 3] == (isWhite ? (int)ColourType.WHITE_ROOK : (int)ColourType.BLACK_ROOK))
+                    {
+                        moves.Add(new Move(from, piece, from + 2));
+                    }
+                }
+            }
+        }
+
+        if (queenSide)
+        {
+            if (boardStatus[from - 1] == 0 && boardStatus[from - 2] == 0 && boardStatus[from - 3] == 0)
+            {
+                if((attack & ( Functions.GetBit(from) | Functions.GetBit(from - 1) | Functions.GetBit(from - 2) )) == 0)
+                {
+                    if (boardStatus[from - 4] == (isWhite ? (int)ColourType.WHITE_ROOK : (int)ColourType.BLACK_ROOK))
+                    {
+                        moves.Add(new Move(from, piece, from - 2));
+                    }
+                }
+            }
+        }
+
+        
+        
+        return RemoveIllegal(moves, board);
+    }
+    
+    static List<Move> RemoveIllegal(List<Move> moves, Board board)
+    {
+        List<Move> @out = new List<Move>(moves);
+        bool isWhite = board.WhiteTurn;
+        
+        foreach (Move move in moves)
+        {
+            int[] tmpBoard = (int[])board.BoardStatus.Clone();
+            
+            
+            tmpBoard[move.position] = (int)ColourType.FREE;
+
+            if ((move.piece - 1) % 6 == (int)ColourType.WHITE_PAWN - 1)
+            {
+                if (tmpBoard[move.finalPosition] == (int)ColourType.FREE && move.finalPosition == board.EnPassantPosition)
+                {
+                    tmpBoard[move.finalPosition + (isWhite ? 8 : -8)] = (int)ColourType.FREE;
+                }
+            }
+            
+            tmpBoard[move.finalPosition] = move.piece;
+
+            int kpos = isWhite ? board.WhiteKingPosition : board.BlackKingPosition;
+
+            if (move.piece == (int)ColourType.WHITE_KING ||
+                move.piece == (int)ColourType.BLACK_KING)
+            {
+                kpos = move.finalPosition;
+            }
+
+            ulong attack = Bitboard.Attacks(!isWhite, tmpBoard);
+
+            if ((attack & Functions.GetBit(kpos)) != 0)
+            {
+                @out.Remove(move);
+            }
+        }
+
+        return @out;
     }
     
 }

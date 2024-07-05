@@ -1,6 +1,5 @@
 using Godot;
 using System;
-using System.Threading.Tasks;
 using System.Threading;
 using System.Collections.Generic;
 
@@ -24,9 +23,7 @@ public class Board
 	private int _whiteKingPosition;
 	private int _blackKingPosition;
 
-	private ulong _pinnedBitboard;
 	private ulong _attackBitboard;
-	private ulong _checkBitboard;
 	
 
 	public int EnPassantPosition => _enPassantPosition;
@@ -53,9 +50,7 @@ public class Board
 	public int WhiteKingPosition => _whiteKingPosition;
 	public int BlackKingPosition => _blackKingPosition;
 
-	public ulong PinnedBitboard => _pinnedBitboard;
 	public ulong CurrAttackBitboard => _attackBitboard;
-	public ulong CheckBitboard => _checkBitboard;
 	
 	public Board()
 	{
@@ -153,6 +148,23 @@ public class Board
 			if (_boardStatus[move.finalPosition] != (int)ColourType.FREE)
 				capture = true;
 
+			if (Mathf.Abs(move.finalPosition - move.position) == 2)
+			{
+				int modifier = move.finalPosition < move.position ? 1 : -1;
+
+				_boardStatus[move.finalPosition + modifier] =
+					(int)(_whiteTurn ? ColourType.WHITE_ROOK : ColourType.BLACK_ROOK);
+
+				if (modifier == -1)
+				{
+					_boardStatus[move.position + 3] = (int)ColourType.FREE;
+				}
+				else
+				{
+					_boardStatus[move.position - 4] = (int)ColourType.FREE;
+
+				}
+			}
 			_boardStatus[move.position] = (int)ColourType.FREE;
 			_boardStatus[move.finalPosition] = move.piece;
 
@@ -171,7 +183,7 @@ public class Board
 	{
 		if (isWhite)
 		{
-			return (_castleStatus << 4) >> 4;
+			return (byte)(_castleStatus << 4) >> 4;
 		}
 		else
 		{
@@ -230,9 +242,7 @@ public class Board
 		else
 			_boardStatus[position] = piece;
 		
-		_pinnedBitboard = Bitboard.Pins(_whiteTurn ? 0 : 1, _boardStatus);
 		_attackBitboard = Bitboard.Attacks(!_whiteTurn, _boardStatus);
-		_checkBitboard = Bitboard.Checks(_whiteTurn, _boardStatus);
 	}
 
 	public void CleanBoard()
@@ -261,9 +271,7 @@ public class Board
 		SetCastlingState(false,fen.BlackCastleStatus[0],fen.BlackCastleStatus[1]);
 		_whiteTurn = fen.WhiteTurn;
 		_enPassantPosition = fen.EnPassantSquare;
-		_pinnedBitboard = Bitboard.Pins(_whiteTurn ? 0 : 1, _boardStatus);
 		_attackBitboard = Bitboard.Attacks(!_whiteTurn, _boardStatus);
-		_checkBitboard = Bitboard.Checks(_whiteTurn, _boardStatus);
 		_50MoveRule = fen.Moves[0];
 		_fullMoves = fen.Moves[1];
 
@@ -306,6 +314,10 @@ public class Board
 		else
 		{
 			valid = MoveKing(move, out capture, checkLegal);
+			if (valid)
+			{
+				SetCastlingState(_whiteTurn);
+			}
 		}
 
 		if (valid)
@@ -329,8 +341,25 @@ public class Board
 				++FullMoves;
 			
 			_attackBitboard = Bitboard.Attacks(!_whiteTurn, _boardStatus);
-			_pinnedBitboard = Bitboard.Pins(_whiteTurn ? 0 : 1, _boardStatus);
-			_checkBitboard = Bitboard.Checks(_whiteTurn, _boardStatus);
+
+
+			if ((_castleStatus & 0b01) != 0 && _boardStatus[63] != (int)ColourType.WHITE_ROOK)
+			{
+				SetCastlingState(true, (_castleStatus & 0b10) != 0, false);
+			}
+			if ((_castleStatus & 0b10) != 0 && _boardStatus[56] != (int)ColourType.WHITE_ROOK)
+			{
+				SetCastlingState(true, false, (_castleStatus & 0b01) != 0);
+			}
+			
+			if ((_castleStatus & 0b01_0000) != 0 && _boardStatus[7] != (int)ColourType.BLACK_ROOK)
+			{
+				SetCastlingState(false, (_castleStatus & 0b10_0000) != 0, false);
+			}
+			if ((_castleStatus & 0b10_0000) != 0 && _boardStatus[0] != (int)ColourType.BLACK_ROOK)
+			{
+				SetCastlingState(false, false, (_castleStatus & 0b01_0000) != 0);
+			}
 
 		}
 		
@@ -343,7 +372,7 @@ public class Board
 		d.move = move;
 		d.boardStatus = (int[])_boardStatus.Clone();
 
-		d.bitboards = new[] { _attackBitboard, _pinnedBitboard, _checkBitboard };
+		d.bitboards = new[] { _attackBitboard };
 		d.data = new[]
 		{
 			_enPassantPosition,
@@ -364,8 +393,7 @@ public class Board
 	public void UnmakeMove(MoveData move)
 	{
 		_boardStatus = move.boardStatus;
-		(_attackBitboard, _pinnedBitboard, _checkBitboard) = 
-			(move.bitboards[0], move.bitboards[1], move.bitboards[2]);
+		_attackBitboard = move.bitboards[0];
 		_whiteTurn = move.whiteTurn;
 		(
 			_enPassantPosition,
@@ -384,18 +412,18 @@ public class Board
 		);
 	}
 
-public void RequestNoOfMoves(int depth, Action<int> callback, Queue<NoOfMovesThreadData<int>> queue)
+public void RequestNoOfMoves(int depth, Action<int> callback, Queue<MultithreadCallback<int>> queue)
 	{
 		ThreadStart start = () => NoOfMovesThread(depth,callback, queue);
 		new Thread(start).Start();
 	}
 
-	void NoOfMovesThread(int depth, Action<int> callback, Queue<NoOfMovesThreadData<int>> queue)
+	void NoOfMovesThread(int depth, Action<int> callback, Queue<MultithreadCallback<int>> queue)
 	{
 		int noOfMoves = NumberOfMoves(depth);
 		lock (queue)
 		{
-			queue.Enqueue(new NoOfMovesThreadData<int>(callback,noOfMoves));
+			queue.Enqueue(new MultithreadCallback<int>(callback,noOfMoves));
 		}
 	}
 	

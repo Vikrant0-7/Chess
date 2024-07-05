@@ -54,4 +54,69 @@ public static class Functions
         
         return 0;
     }
+
+    public static int AlgebraToInt(string pos)
+    {
+        return ((8 - (pos[1] - '0')) << 3) + (pos[0] - 'a');
+    }
+
+    public static Move TranslateAlgebraicMove(string algebra, Board board)
+    {
+        Move move = new Move();
+
+        move.finalPosition = AlgebraToInt(algebra.Substring(2, 2));
+        move.position = AlgebraToInt(algebra.Substring(0, 2));
+        move.piece = board.BoardStatus[move.position];
+        move.promoteTo = -1;
+        
+        if (algebra.Length == 5)
+        {
+            if (board.WhiteTurn)
+            {
+                switch (algebra[4])
+                {
+                    case 'n':
+                        move.promoteTo = (int)ColourType.WHITE_KNIGHT;
+                        break;
+                    case 'q':
+                        move.promoteTo = (int)ColourType.WHITE_QUEEN;
+                        break;
+                    case 'b':
+                        move.promoteTo = (int)ColourType.WHITE_BISHOP;
+                        break;
+                    case 'r':
+                        move.promoteTo = (int)ColourType.WHITE_ROOK;
+                        break;
+                    default:
+                        move.promoteTo = -1;
+                        break;
+                }
+            }
+            else
+            {
+                switch (algebra[4])
+                {
+                    case 'n':
+                        move.promoteTo = (int)ColourType.BLACK_KNIGHT;
+                        break;
+                    case 'q':
+                        move.promoteTo = (int)ColourType.BLACK_QUEEN;
+                        break;
+                    case 'b':
+                        move.promoteTo = (int)ColourType.BLACK_BISHOP;
+                        break;
+                    case 'r':
+                        move.promoteTo = (int)ColourType.BLACK_ROOK;
+                        break;
+                    default:
+                        move.promoteTo = -1;
+                        break;
+                }
+            }
+        }
+        
+        return move;
+
+    }
+    
 }

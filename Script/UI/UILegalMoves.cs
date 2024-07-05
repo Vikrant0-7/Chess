@@ -15,7 +15,7 @@ public partial class UILegalMoves : VBoxContainer
 	private Label _label;
 	private Label _timeLabel;
 
-	private Queue<NoOfMovesThreadData<int>> queue;
+	private Queue<MultithreadCallback<int>> queue;
 
 	private double _time;
 	
@@ -28,7 +28,7 @@ public partial class UILegalMoves : VBoxContainer
 		_timeLabel = GetNode<Label>("Time/T");
 		
 		GetNode<Button>("Attacks2/Button").Pressed += () => _OnButtonPressed();
-		queue = new Queue<NoOfMovesThreadData<int>>();
+		queue = new Queue<MultithreadCallback<int>>();
 	}
 
 	void _OnButtonPressed()
@@ -44,7 +44,7 @@ public partial class UILegalMoves : VBoxContainer
 		_time += delta;
 		if (queue.Count > 0)
 		{
-			NoOfMovesThreadData<int> data = queue.Dequeue();
+			MultithreadCallback<int> data = queue.Dequeue();
 			data.callback.Invoke(data.parameter);
 		}
 	}

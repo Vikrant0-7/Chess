@@ -1,11 +1,10 @@
-[gd_scene load_steps=29 format=3 uid="uid://b4bshy74cjsdq"]
+[gd_scene load_steps=28 format=3 uid="uid://b0qpgvlt0fetl"]
 
 [ext_resource type="Script" path="res://Script/Board/BoardVisual.cs" id="1_6qg82"]
 [ext_resource type="PackedScene" uid="uid://d3ddry3idf6eb" path="res://Assets/square.res" id="2_w26xg"]
 [ext_resource type="PackedScene" uid="uid://7jffvk3rtk5w" path="res://Assets/label.res" id="3_ql0j3"]
 [ext_resource type="PackedScene" uid="uid://bt7nroqsewdq4" path="res://Assets/piece.res" id="4_7x6rc"]
 [ext_resource type="FontFile" uid="uid://lpguj7gpj4sf" path="res://Fonts/Ubuntu-Regular.ttf" id="5_c8x7i"]
-[ext_resource type="Script" path="res://Script/Board/AI.cs" id="5_p6f4a"]
 [ext_resource type="Script" path="res://Script/UI/BoardProperties.cs" id="6_s58nj"]
 [ext_resource type="Texture2D" uid="uid://cvm2bhn7ds2w7" path="res://sprites/wk.svg" id="7_atdpb"]
 [ext_resource type="Script" path="res://Script/UI/Turn.cs" id="7_k0o7r"]
@@ -53,9 +52,6 @@ _text = ExtResource("3_ql0j3")
 _pieceInstance = ExtResource("4_7x6rc")
 _darkSquares = Color(0.42195, 0.563418, 0.442958, 1)
 _lightSquares = Color(0.724643, 0.724643, 0.724643, 1)
-
-[node name="AI" type="Node2D" parent="."]
-script = ExtResource("5_p6f4a")
 
 [node name="Marker" type="Marker2D" parent="."]
 position = Vector2(68, 115)

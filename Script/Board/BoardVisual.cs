@@ -11,6 +11,7 @@ public partial class BoardVisual : Node2D
 	[Export] PackedScene _quad; //Scene to use as square of chess board
 	[Export] PackedScene _text; //Scene to be used to positional text
 	[Export] PackedScene _pieceInstance; //Piece Scene
+	[Export] private bool _aiIsWhite;
 
 
 	[ExportCategory("Board Color")]
@@ -23,8 +24,6 @@ public partial class BoardVisual : Node2D
 
 	[Export] private double _time;
 	#endregion
-
-	
 	
 	Marker2D _positionPlaceHolder; //Child node that acts as position placeholder for board
 	Node2D _pieceContainer; //Child node that store all pieces as its childs
@@ -33,14 +32,20 @@ public partial class BoardVisual : Node2D
 	
 	//very important
 	private bool _moved = false; //variable is used to update board once a piece is moved
-	const float SIZE = 50f; //Size of One Square of Chess Board in Px
+	public float SIZE = 50f; //Size of One Square of Chess Board in Px
 	Board _board; //Actual Board
+	private List<Piece> _pieces;
 
 	public bool showMoves = false;
 	public int pinAttack = 0;
 	public Board board => _board;
 	public int WhitePromoteTo = (int)ColourType.WHITE_QUEEN;
 	public int BlackPromoteTo = (int)ColourType.BLACK_QUEEN;
+	public bool AiIsWhite => _aiIsWhite;
+	
+	public delegate void MoveMadeEvent(bool isWhite);
+
+	public event MoveMadeEvent MoveMade;
 	
 	
 	//Generates an Chess Board with initial configuration
@@ -87,54 +92,48 @@ public partial class BoardVisual : Node2D
 				}
 			}
 		}
-		else if(pinAttack == 2)
-		{
-			for (int i = 0; i < 64; ++i)
-			{
-				if ((_board.PinnedBitboard & (ulong)1 << i) != 0)
-				{
-					MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
-					if (sq.Modulate == _darkSquares)
-						sq.Modulate = _attackDarkSqaure;
-					else if (sq.Modulate == _lightSquares)
-						sq.Modulate = _attackLighSquare;
-				}
-			}
-		}
-		else
-		{
-			for (int i = 0; i < 64; ++i)
-			{
-				if ((_board.CheckBitboard & (ulong)1 << i) != 0)
-				{
-					MeshInstance2D sq = _squareContainer.GetChild<MeshInstance2D>(i);
-					if (sq.Modulate == _darkSquares)
-						sq.Modulate = _attackDarkSqaure;
-					else if (sq.Modulate == _lightSquares)
-						sq.Modulate = _attackLighSquare;
-				}
-			}
-		}
 	}
-	
+
 	void SetBoard()
 	{
-		for (int i = 0; i < _pieceContainer.GetChildCount(); ++i)
+		if (_pieces.Count == 0)
 		{
-			_pieceContainer.GetChild(i).QueueFree();
-		}
-		for(int i = 0; i < 64; ++i){
-			Vector2I boardPosition = Functions.IntToBoardPosition(i);
-			Vector2 worldPosition = BoardPositionToGlobalPosition(boardPosition);
-				
-			Piece piece = _pieceInstance.Instantiate<Piece>();
-			piece.GlobalPosition = worldPosition;
-
-			if (board.BoardStatus[i] != (int)ColourType.FREE)
+			foreach (var item in _pieceContainer.GetChildren())
 			{
-				piece.Init((ColourType)_board.BoardStatus[i], Functions.IntToBoardPosition(i), this);
+				item.QueueFree();
+			}
+			for (int i = 0; i < 32; ++i)
+			{
+				Piece piece = _pieceInstance.Instantiate<Piece>();
+				_pieces.Add(piece);
 				_pieceContainer.CallDeferred("add_child", piece);
 			}
+		}
+		int pieceIdx = 0;
+		for (int i = 0; i < 64; ++i)
+		{
+			if (board.BoardStatus[i] != (int)ColourType.FREE)
+			{
+				Vector2I boardPosition = Functions.IntToBoardPosition(i);
+
+				if (pieceIdx >= _pieces.Count)
+				{
+					_pieces.Clear();
+					SetBoard();
+				}
+				Piece piece = _pieces[pieceIdx++];
+
+				piece.Init((ColourType)_board.BoardStatus[i], boardPosition, this);
+			}
+		}
+		if (pieceIdx < _pieces.Count)
+		{
+			for (int i = pieceIdx; pieceIdx < _pieces.Count; ++i)
+			{
+				if(!_pieces[i].IsQueuedForDeletion())
+					_pieces[i].QueueFree();
+			}
+			_pieces.RemoveRange(pieceIdx, _pieces.Count - pieceIdx);
 		}
 	}
 
@@ -161,6 +160,11 @@ public partial class BoardVisual : Node2D
 		);
 		legal = board.Move(m, out _, true);
 
+		if (legal)
+		{
+			MoveMade?.Invoke(_board.WhiteTurn);
+		}
+
 		_moved = true;
 		
 		return legal;
@@ -168,6 +172,9 @@ public partial class BoardVisual : Node2D
 
 	public void ShowMoves(int pieceIndex, Vector2I initialPosition)
 	{
+		if(_board.WhiteTurn == _aiIsWhite)
+			return;
+		
 		if (!showMoves || (_board.WhiteTurn && pieceIndex > 6) || (!_board.WhiteTurn && pieceIndex <= 6))
 		{
 			return;
@@ -261,6 +268,7 @@ public partial class BoardVisual : Node2D
 	public override void _Ready()
 	{
 		_board = new Board();
+		_pieces = new List<Piece>();
 		
 		_positionPlaceHolder = GetNode<Marker2D>("Marker");
 		_pieceContainer = GetNode<Node2D>("Marker/Piece");
@@ -268,7 +276,7 @@ public partial class BoardVisual : Node2D
 		_squareContainer = GetNode<Node2D>("Marker/Squares");
 
 		_squareContainer.Position -= _positionPlaceHolder.Position;
-		_pieceContainer.Position -= _positionPlaceHolder.Position;
+		_pieceContainer.Position += Vector2.One * 23;
 		_labelContainer.Position -= _positionPlaceHolder.Position;
 		
 		Generate();

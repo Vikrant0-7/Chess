@@ -22,7 +22,10 @@ public struct Move
 
     public override string ToString()
     {
-        return "abcdefgh"[position % 8] + (8 - position / 8).ToString() + "abcdefgh"[finalPosition % 8] + (8 - finalPosition / 8).ToString();
+        return "abcdefgh"[position % 8] + (8 - position / 8).ToString() + "abcdefgh"[finalPosition % 8] +
+               (8 - finalPosition / 8).ToString() + (
+                   (promoteTo != -1) ? " kqrbnpkqrbnp"[promoteTo] : ""
+               );
     }
 }
 
@@ -42,12 +45,12 @@ public enum ColourType{
     BLACK_PAWN = 12
 }
 
-public struct NoOfMovesThreadData<T>
+public struct MultithreadCallback<T>
 {
     public Action<T> callback;
     public T parameter;
 
-    public NoOfMovesThreadData(Action<T> callback, T parameter)
+    public MultithreadCallback(Action<T> callback, T parameter)
     {
         this.callback = callback;
         this.parameter = parameter;
