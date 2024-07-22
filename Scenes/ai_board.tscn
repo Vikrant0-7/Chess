@@ -1,0 +1,298 @@
+[gd_scene load_steps=25 format=3 uid="uid://b4toal46qy71o"]
+
+[ext_resource type="Script" path="res://Script/Board/BoardVisual.cs" id="1_d5j46"]
+[ext_resource type="PackedScene" uid="uid://d3ddry3idf6eb" path="res://Assets/square.res" id="2_bv6kn"]
+[ext_resource type="PackedScene" uid="uid://7jffvk3rtk5w" path="res://Assets/label.res" id="3_li32n"]
+[ext_resource type="PackedScene" uid="uid://bt7nroqsewdq4" path="res://Assets/piece.res" id="4_fsaea"]
+[ext_resource type="Script" path="res://Script/Board/AI.cs" id="5_eucqw"]
+[ext_resource type="Resource" uid="uid://dl71s7wxpxof6" path="res://settings/newborn.tres" id="6_rwqfy"]
+[ext_resource type="Theme" uid="uid://cg2wubxo276of" path="res://Scenes/ui.theme" id="7_noyvl"]
+[ext_resource type="Script" path="res://Script/UI/Turn.cs" id="8_7lclk"]
+[ext_resource type="Texture2D" uid="uid://cvm2bhn7ds2w7" path="res://sprites/wk.svg" id="9_yhmdl"]
+[ext_resource type="Texture2D" uid="uid://dfej2dww7j06l" path="res://sprites/bk.svg" id="10_60vha"]
+[ext_resource type="Texture2D" uid="uid://bu766icsb38tp" path="res://sprites/wq.svg" id="13_jojal"]
+[ext_resource type="Texture2D" uid="uid://bvq43trfmpndp" path="res://sprites/wr.svg" id="14_m5ohe"]
+[ext_resource type="Texture2D" uid="uid://h5etmgfna4jx" path="res://sprites/wb.svg" id="15_8ijvm"]
+[ext_resource type="Texture2D" uid="uid://dh5ekwvoswhqc" path="res://sprites/wn.svg" id="16_3is2s"]
+[ext_resource type="Script" path="res://Script/UI/GameEnd.cs" id="18_kmd37"]
+[ext_resource type="Script" path="res://Script/UI/Fen.cs" id="23_t5bra"]
+[ext_resource type="Shader" path="res://Shader/ai_board.gdshader" id="24_emm63"]
+[ext_resource type="Script" path="res://Script/UI/PromotePop.cs" id="24_opvup"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_jiq02"]
+size = Vector2(640, 640)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hcbbj"]
+shader = ExtResource("24_emm63")
+shader_parameter/blur_amount = null
+shader_parameter/mix_amount = null
+shader_parameter/color_over = null
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6x7nw"]
+shader = ExtResource("24_emm63")
+shader_parameter/blur_amount = 1.13
+shader_parameter/mix_amount = 0.391
+shader_parameter/color_over = null
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jjhfk"]
+bg_color = Color(0.574013, 0.52511, 0.760071, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pl4nq"]
+bg_color = Color(0.688075, 0.653374, 0.844795, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s2o2w"]
+bg_color = Color(0.448209, 0.39601, 0.636662, 1)
+
+[node name="Chess Board" type="Node2D"]
+position = Vector2(-2, -1)
+script = ExtResource("1_d5j46")
+_quad = ExtResource("2_bv6kn")
+_text = ExtResource("3_li32n")
+_pieceInstance = ExtResource("4_fsaea")
+_darkSquares = Color(0.42195, 0.563418, 0.442958, 1)
+_lightSquares = Color(0.724643, 0.724643, 0.724643, 1)
+metadata/_edit_vertical_guides_ = [1280.0]
+
+[node name="AI" type="Node2D" parent="."]
+script = ExtResource("5_eucqw")
+_aiSettings = ExtResource("6_rwqfy")
+
+[node name="Marker" type="Marker2D" parent="."]
+position = Vector2(340, 21)
+gizmo_extents = 50.0
+
+[node name="Squares" type="Node2D" parent="Marker"]
+
+[node name="Piece" type="Node2D" parent="Marker"]
+
+[node name="Labels" type="Node2D" parent="Marker"]
+unique_name_in_owner = true
+visible = false
+light_mask = 0
+visibility_layer = 2
+z_index = 100
+
+[node name="MeshInstance2D" type="MeshInstance2D" parent="Marker"]
+visible = false
+position = Vector2(320, 320)
+mesh = SubResource("QuadMesh_jiq02")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Data" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+theme = ExtResource("7_noyvl")
+
+[node name="Turn Indicator" type="HBoxContainer" parent="CanvasLayer/Data"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.264062
+offset_bottom = 100.0
+grow_horizontal = 2
+alignment = 1
+script = ExtResource("8_7lclk")
+_white = ExtResource("9_yhmdl")
+_black = ExtResource("10_60vha")
+_boardPath = NodePath("../../..")
+metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="CanvasLayer/Data/Turn Indicator"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 35
+text = "Turn"
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/Data/Turn Indicator"]
+layout_mode = 2
+texture = ExtResource("9_yhmdl")
+stretch_mode = 3
+
+[node name="Fen" type="VBoxContainer" parent="CanvasLayer/Data"]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -89.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("23_t5bra")
+_boardNodePath = NodePath("../../..")
+
+[node name="Label" type="Label" parent="CanvasLayer/Data/Fen"]
+layout_mode = 2
+text = "Fen String"
+horizontal_alignment = 1
+
+[node name="LineEdit" type="LineEdit" parent="CanvasLayer/Data/Fen"]
+layout_mode = 2
+placeholder_text = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+expand_to_text_length = true
+
+[node name="Button" type="HBoxContainer" parent="CanvasLayer/Data/Fen"]
+layout_mode = 2
+alignment = 1
+
+[node name="Fen" type="Button" parent="CanvasLayer/Data/Fen/Button"]
+custom_minimum_size = Vector2(144.455, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Fen To Board"
+
+[node name="Board" type="Button" parent="CanvasLayer/Data/Fen/Button"]
+custom_minimum_size = Vector2(144.455, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Board To Fen"
+
+[node name="Prompt Pop" type="Control" parent="CanvasLayer"]
+process_mode = 3
+visible = false
+z_index = 5
+material = SubResource("ShaderMaterial_hcbbj")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme = ExtResource("7_noyvl")
+script = ExtResource("24_opvup")
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/Prompt Pop"]
+material = SubResource("ShaderMaterial_6x7nw")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Grid" type="VBoxContainer" parent="CanvasLayer/Prompt Pop"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -68.5
+offset_top = -65.5
+offset_right = 68.5
+offset_bottom = 65.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Prompt Pop/Grid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 46
+text = "Promote Pawn To"
+horizontal_alignment = 1
+
+[node name="Box" type="HBoxContainer" parent="CanvasLayer/Prompt Pop/Grid"]
+layout_mode = 2
+alignment = 1
+
+[node name="Box1" type="VBoxContainer" parent="CanvasLayer/Prompt Pop/Grid/Box"]
+layout_mode = 2
+
+[node name="queen" type="TextureButton" parent="CanvasLayer/Prompt Pop/Grid/Box/Box1"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+texture_normal = ExtResource("13_jojal")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="bishop" type="TextureButton" parent="CanvasLayer/Prompt Pop/Grid/Box/Box1"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+texture_normal = ExtResource("15_8ijvm")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Box2" type="VBoxContainer" parent="CanvasLayer/Prompt Pop/Grid/Box"]
+layout_mode = 2
+
+[node name="rook" type="TextureButton" parent="CanvasLayer/Prompt Pop/Grid/Box/Box2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+texture_normal = ExtResource("14_m5ohe")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="knight" type="TextureButton" parent="CanvasLayer/Prompt Pop/Grid/Box/Box2"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+texture_normal = ExtResource("16_3is2s")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="GameEnd" type="Control" parent="CanvasLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("7_noyvl")
+script = ExtResource("18_kmd37")
+
+[node name="ColorRect2" type="ColorRect" parent="CanvasLayer/GameEnd"]
+material = SubResource("ShaderMaterial_6x7nw")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="restart" type="Button" parent="CanvasLayer/GameEnd"]
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 538.0
+offset_top = 130.0
+offset_right = -538.0
+offset_bottom = 195.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 41
+theme_override_styles/normal = SubResource("StyleBoxFlat_jjhfk")
+theme_override_styles/hover = SubResource("StyleBoxFlat_pl4nq")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_s2o2w")
+text = "Restart"
+
+[node name="msg" type="Label" parent="CanvasLayer/GameEnd"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.348611
+anchor_right = 1.0
+anchor_bottom = 0.348611
+offset_left = 60.0
+offset_top = -181.0
+offset_right = -60.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 61
+text = "Fish let you see another sun rise
+(if you managed to wake up early)"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3

@@ -24,7 +24,7 @@ public partial class StockfishInterface : Node
 
 	public bool PlayingAsWhite => _playingAsWhite;
 	
-	public StockfishInterface(Board b)
+	public StockfishInterface(Board b, int depth, int movetime, bool playingAsWhite)
 	{
 		string path = "";
 		if (OS.HasFeature("editor"))
@@ -40,7 +40,10 @@ public partial class StockfishInterface : Node
 		_updatePositionCallbacks = new Queue<Action>();
 		_board = b;
 		_fish = new Stockfish(path);
-		_playingAsWhite = false;
+		
+		_playingAsWhite = playingAsWhite;
+		_depth = depth;
+		_movetime = movetime;
 	}
 
 	public void OrderToUpdatePosition(Action callback)
@@ -101,10 +104,4 @@ public partial class StockfishInterface : Node
 			data.Invoke();
 		}
 	}
-
-	public void SetPlayingAsWhite(bool isWhite)
-	{
-		_playingAsWhite = isWhite;
-	}
-	
 }

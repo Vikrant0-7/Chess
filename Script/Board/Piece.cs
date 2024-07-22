@@ -21,12 +21,23 @@ public partial class Piece : Node2D
 
 	private Vector2I _boardPosition;
 	private BoardVisual _boardVisual;
+	private int _boardPosInt = -1;
+	private Sprite2D _sprite;
 
 	private bool isWhite;
+
+	private bool _moved;
+
+	private Vector2 worldPosition = Vector2.Zero;
 
 	public Vector2I BoardPosition
 	{
 		get => _boardPosition;
+	}
+
+	public int IntBoardPosition
+	{
+		get => _boardPosInt;
 	}
 	
 	// Called when the node enters the scene tree for the first time.
@@ -36,8 +47,22 @@ public partial class Piece : Node2D
 		this._boardPosition = _boardPosition;
 		this._boardVisual = _boardVisual;
 		this.colourType = colourType;
-		GetNode<Sprite2D>("Sprite2D").Texture = textures[(int)colourType - 1];
-		Position = new Vector2(_boardPosition.X, _boardPosition.Y) * _boardVisual.SIZE;
+		_sprite = GetNode<Sprite2D>("Sprite2D");
+		
+		_moved = false;
+		if (_boardPosInt != -1)
+		{
+			_moved = true;
+		}
+		
+		this._boardPosInt = Functions.BoardPositionToInt(this._boardPosition);
+		_sprite.Texture = textures[(int)colourType - 1];
+		
+		worldPosition = new Vector2(_boardPosition.X, _boardPosition.Y) * _boardVisual.SIZE;
+
+		if (!_moved)
+			Position = worldPosition;
+		
 		isWhite = (int)this.colourType <= (int)ColourType.WHITE_PAWN;
 	}
 
@@ -50,8 +75,21 @@ public partial class Piece : Node2D
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	public override void _Process(double delta)
+	public async override void _Process(double delta)
 	{
+
+		if (_moved)
+		{
+			if (Functions.IsEqualApprox(Position, worldPosition, 10))
+			{
+				Position = worldPosition;
+				_moved = false;
+			}
+			else
+			{
+				Position = Position.Lerp(worldPosition, 0.3f);
+			}
+		}
 		
 		if(_boardVisual.board.WhiteTurn != isWhite)
 			return;
@@ -66,7 +104,7 @@ public partial class Piece : Node2D
 				_prevPosition = GlobalPosition;
 				_dragginStart = true;
 			}
-			GlobalPosition = GetGlobalMousePosition();
+			GlobalPosition = GetGlobalMousePosition() - 40 * Vector2.One;
 		}
 
 		if (_mouseOver)
@@ -86,9 +124,13 @@ public partial class Piece : Node2D
 			{
 				_dragginStart = false;
 				_clickedWhileHovering = false;
-				Vector2I finalPos = _boardVisual.GlobalPositionToBoardPosition(GlobalPosition);
+				Vector2I finalPos = _boardVisual.GlobalPositionToBoardPosition(_sprite.GlobalPosition);
+
+				if (!await _boardVisual.HumanMakeMove((int)colourType, _boardPosition, finalPos))
+				{
+					_moved = true;
+				}
 				
-				_boardVisual.HumanMakeMove((int)colourType, _boardPosition, finalPos);
 				_boardVisual.ResetColors();
 			}
 		}

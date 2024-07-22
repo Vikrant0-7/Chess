@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AiSettings" load_steps=2 format=3 uid="uid://dl71s7wxpxof6"]
+
+[ext_resource type="Script" path="res://Script/Stockfish/ai_settings.gd" id="1_ee7jm"]
+
+[resource]
+script = ExtResource("1_ee7jm")
+depth = 1
+movetime = 100
+ai_is_white = false

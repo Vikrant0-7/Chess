@@ -12,7 +12,6 @@ public static partial class Bitboard
     public static ulong Attacks(bool whiteAttacks, int[] boardStatus)
     {
         ulong attack = 0;
-
         for (int i = 0; i < boardStatus.Length; ++i)
         {
             int piece = boardStatus[i];
@@ -20,12 +19,10 @@ public static partial class Bitboard
                 continue;
 
             piece -= 1;
-            
             if(whiteAttacks && piece > (int)ColourType.WHITE_PAWN - 1 ||
                !whiteAttacks && piece < (int)ColourType.BLACK_KING - 1
                )
                 continue;
-
             switch (piece % 6)
             {
                 case (int)ColourType.WHITE_PAWN - 1:
@@ -41,10 +38,7 @@ public static partial class Bitboard
                     attack |= SlidingMoves(boardStatus, whiteAttacks, i, piece + 1);
                     break;
             }
-            
-            
         }
-        
         return attack;
     }
 

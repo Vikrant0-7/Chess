@@ -116,7 +116,17 @@ public static class Functions
         }
         
         return move;
+    }
 
+    public static bool IsEqualApprox(Vector2 v1, Vector2 v2, float tolerence)
+    {
+        return Mathf.IsEqualApprox(v1.X, v2.X, tolerence) &&
+               Mathf.IsEqualApprox(v1.Y, v2.Y, tolerence);
+    }
+
+    public static bool CheckBit(ulong bits, int pos)
+    {
+        return (bits & GetBit(pos)) != 0;
     }
     
 }

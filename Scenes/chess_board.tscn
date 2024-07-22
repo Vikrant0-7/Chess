@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://b4bshy74cjsdq"]
+[gd_scene load_steps=30 format=3 uid="uid://b4bshy74cjsdq"]
 
 [ext_resource type="Script" path="res://Script/Board/BoardVisual.cs" id="1_6qg82"]
 [ext_resource type="PackedScene" uid="uid://d3ddry3idf6eb" path="res://Assets/square.res" id="2_w26xg"]
@@ -7,6 +7,7 @@
 [ext_resource type="FontFile" uid="uid://lpguj7gpj4sf" path="res://Fonts/Ubuntu-Regular.ttf" id="5_c8x7i"]
 [ext_resource type="Script" path="res://Script/Board/AI.cs" id="5_p6f4a"]
 [ext_resource type="Script" path="res://Script/UI/BoardProperties.cs" id="6_s58nj"]
+[ext_resource type="Resource" uid="uid://bhnujwejxpa40" path="res://settings/godlevel.res" id="6_txguo"]
 [ext_resource type="Texture2D" uid="uid://cvm2bhn7ds2w7" path="res://sprites/wk.svg" id="7_atdpb"]
 [ext_resource type="Script" path="res://Script/UI/Turn.cs" id="7_k0o7r"]
 [ext_resource type="Texture2D" uid="uid://dfej2dww7j06l" path="res://sprites/bk.svg" id="9_ohx4l"]
@@ -25,6 +26,9 @@
 [ext_resource type="Script" path="res://Script/UI/Fen.cs" id="22_qemy5"]
 [ext_resource type="Script" path="res://Script/UI/Promotes.cs" id="23_vx5qo"]
 
+[sub_resource type="QuadMesh" id="QuadMesh_jiq02"]
+size = Vector2(640, 640)
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_sk3ry"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yfxck"]
@@ -42,9 +46,6 @@ TextEdit/fonts/font = ExtResource("5_c8x7i")
 VSeparator/constants/separation = 6
 VSeparator/styles/separator = SubResource("StyleBoxEmpty_yfxck")
 
-[sub_resource type="QuadMesh" id="QuadMesh_jiq02"]
-size = Vector2(400, 400)
-
 [node name="Chess Board" type="Node2D"]
 position = Vector2(-2, -1)
 script = ExtResource("1_6qg82")
@@ -56,9 +57,10 @@ _lightSquares = Color(0.724643, 0.724643, 0.724643, 1)
 
 [node name="AI" type="Node2D" parent="."]
 script = ExtResource("5_p6f4a")
+_aiSettings = ExtResource("6_txguo")
 
 [node name="Marker" type="Marker2D" parent="."]
-position = Vector2(68, 115)
+position = Vector2(70, 16)
 gizmo_extents = 50.0
 
 [node name="Squares" type="Node2D" parent="Marker"]
@@ -71,6 +73,11 @@ visible = false
 light_mask = 0
 visibility_layer = 2
 z_index = 100
+
+[node name="MeshInstance2D" type="MeshInstance2D" parent="Marker"]
+visible = false
+position = Vector2(320, 320)
+mesh = SubResource("QuadMesh_jiq02")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -206,6 +213,7 @@ layout_mode = 2
 horizontal_alignment = 1
 
 [node name="Turn Indicator" type="HBoxContainer" parent="CanvasLayer/Control"]
+visible = false
 layout_mode = 2
 anchor_left = -0.0763889
 anchor_right = -0.0763889
@@ -416,6 +424,7 @@ texture = ExtResource("12_bmsqv")
 stretch_mode = 3
 
 [node name="Fen" type="VBoxContainer" parent="CanvasLayer/Control"]
+visible = false
 layout_mode = 0
 offset_left = 32.0
 offset_top = 600.0
@@ -452,6 +461,7 @@ size_flags_horizontal = 4
 text = "Board To Fen"
 
 [node name="Promotes" type="VBoxContainer" parent="CanvasLayer/Control"]
+visible = false
 layout_mode = 0
 offset_left = 544.0
 offset_top = 120.0
@@ -493,8 +503,3 @@ popup/item_2/text = "Bishop"
 popup/item_2/id = 2
 popup/item_3/text = "Knight"
 popup/item_3/id = 3
-
-[node name="MeshInstance2D" type="MeshInstance2D" parent="."]
-visible = false
-position = Vector2(268, 315)
-mesh = SubResource("QuadMesh_jiq02")

@@ -84,73 +84,7 @@ public class LegalMoves
                 }
             }
         }
-        
-/*
-        if (pos.X > 0)
-        {
-            testPos = Functions.BoardPositionToInt(pos.X - 1, pos.Y + modifier);
-            if (Functions.IsPieceFriendly(isWhite, boardStatus[testPos]) == 0)
-            {
-                if (pos.Y != (isWhite ? 1 : 6))
-                {
-                    moves.Add(new Move(from, piece,testPos));
-                }
-                else
-                {
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_QUEEN));
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_ROOK));
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_BISHOP));
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_KNIGHT));
 
-                }
-            }
-
-            if (pos.Y == (isWhite ? 3 : 4) && testPos == enPassantSquare)
-            {
-                if (Functions.IsPieceFriendly(isWhite, boardStatus[testPos]) == -1)
-                {
-                    moves.Add(new Move(from, piece,testPos));
-                }
-            }
-        }
-        
-        if (pos.X < 7)
-        {
-            testPos = Functions.BoardPositionToInt(pos.X + 1, pos.Y + modifier);
-            if (Functions.IsPieceFriendly(isWhite, boardStatus[testPos]) == 0)
-            {
-                if (pos.Y != (isWhite ? 1 : 6))
-                {
-                    moves.Add(new Move(from, piece,testPos));
-                }
-                else
-                {
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_QUEEN));
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_ROOK));
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_BISHOP));
-                    moves.Add(new Move(from, piece,testPos,
-                        (isWhite ? 0 : 6) + (int)ColourType.WHITE_KNIGHT));
-
-                }
-            }
-
-            if (pos.Y == (isWhite ? 3 : 4) && testPos == enPassantSquare)
-            {
-                if (Functions.IsPieceFriendly(isWhite, boardStatus[testPos]) == -1)
-                {
-                    moves.Add(new Move(from, piece,testPos));
-                }
-            }
-        }
-        */
-        
         return RemoveIllegal(moves, board);
     }
 

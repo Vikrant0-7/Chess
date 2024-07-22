@@ -23,8 +23,19 @@ public class Board
 	private int _whiteKingPosition;
 	private int _blackKingPosition;
 
+	private List<int> _squaresWithMoves;
+
 	private ulong _attackBitboard;
+
+	public delegate void MoveMadeEventHandler(Move move, bool capture);
+
+	public delegate void CheckEventHandler(bool isWhite);
+
+	public delegate void GameEndEventHandler(bool isWhite, bool isMate);
 	
+	public static MoveMadeEventHandler MoveMade;
+	public static event CheckEventHandler Check;
+	public static event GameEndEventHandler GameEnd;
 
 	public int EnPassantPosition => _enPassantPosition;
 	public int[] BoardStatus => _boardStatus;
@@ -51,6 +62,8 @@ public class Board
 	public int BlackKingPosition => _blackKingPosition;
 
 	public ulong CurrAttackBitboard => _attackBitboard;
+
+	public List<int> SquaresWithMoves => _squaresWithMoves;
 	
 	public Board()
 	{
@@ -252,6 +265,7 @@ public class Board
 		_50MoveRule = 0;
 		_fullMoves = 1;
 		_castleStatus = 0;
+		_squaresWithMoves = _moveGenerator.GetLegalMovesSquare();
 	}
 
 
@@ -292,7 +306,7 @@ public class Board
 			if(b == 2)
 				break;
 		}
-		
+		_squaresWithMoves = _moveGenerator.GetLegalMovesSquare();
 	}
 
 	public bool Move(Move move, out bool capture, bool checkLegal = true)
@@ -322,7 +336,7 @@ public class Board
 
 		if (valid)
 		{
-			
+			MoveMade?.Invoke(move, capture);
 			_whiteTurn = !_whiteTurn;
 			if ((move.piece - 1) % 6 != (int)ColourType.WHITE_PAWN - 1)
 			{
@@ -361,12 +375,29 @@ public class Board
 				SetCastlingState(false, false, (_castleStatus & 0b01_0000) != 0);
 			}
 
+			_squaresWithMoves = _moveGenerator.GetLegalMovesSquare();
+
+			bool check = false;
+			if (Functions.CheckBit
+			    (_attackBitboard,
+				    _whiteTurn ? _whiteKingPosition : _blackKingPosition)
+			   )
+			{
+				Check?.Invoke(_whiteTurn);
+				check = true;
+			}
+
+			if (_squaresWithMoves.Count == 0)
+			{
+				GameEnd?.Invoke(_whiteTurn, check);
+			}
+			
 		}
 		
 		return valid;
 	}
 	
-	public MoveData MakeMove(Move move)
+	public MoveData MakeMove(Move move, bool checkLegal = false)
 	{
 		MoveData d = new MoveData();
 		d.move = move;
@@ -385,7 +416,7 @@ public class Board
 
 		d.whiteTurn = WhiteTurn;
 		
-		Move(move, out _, false);
+		Move(move, out _, checkLegal);
 		return d;
 
 	}

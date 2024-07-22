@@ -32,39 +32,51 @@ public partial class BoardVisual : Node2D
 	
 	//very important
 	private bool _moved = false; //variable is used to update board once a piece is moved
-	public float SIZE = 50f; //Size of One Square of Chess Board in Px
+	public float SIZE = 80; //Size of One Square of Chess Board in Px
 	Board _board; //Actual Board
 	private List<Piece> _pieces;
 
-	public bool showMoves = false;
+	public bool showMoves = true;
 	public int pinAttack = 0;
 	public Board board => _board;
 	public int WhitePromoteTo = (int)ColourType.WHITE_QUEEN;
 	public int BlackPromoteTo = (int)ColourType.BLACK_QUEEN;
 	public bool AiIsWhite => _aiIsWhite;
 	
-	public delegate void MoveMadeEvent(bool isWhite);
+	[Signal]
+	public delegate void MoveMadeEventHandler(bool isWhite);
 
-	public event MoveMadeEvent MoveMade;
-	
-	
+	public delegate Task<int> PromoteToEvent(bool isWhite);
+	private static event PromoteToEvent _promoteTo;
+	public static event PromoteToEvent PromoteTo
+	{
+		add
+		{
+			_promoteTo = value;
+		}
+		remove
+		{
+			if (value != null) _promoteTo -= value;
+		}
+	}
+
 	//Generates an Chess Board with initial configuration
 	void Generate(){
 		for(int i = 0; i < 8; ++i){
 			for (int j = 0; j < 8; ++j)
 			{
-				MeshInstance2D mesh = _quad.Instantiate<MeshInstance2D>();
+				Node2D mesh = _quad.Instantiate<Node2D>();
 				mesh.Modulate = _lightSquares;
 				if (i % 2 == 0 && j % 2 == 1 || i % 2 == 1 && j % 2 == 0)
 				{
 					mesh.Modulate = _darkSquares;
 				}
 
-				mesh.GlobalPosition = (_positionPlaceHolder.GlobalPosition.X + SIZE / 2 + SIZE * j) * Vector2.Right +
-									  (_positionPlaceHolder.GlobalPosition.Y + SIZE / 2 + SIZE * i) * Vector2.Down;
+				mesh.Position = SIZE * j * Vector2.Right +
+									  SIZE * i * Vector2.Down;
 				Label label = _text.Instantiate<Label>();
 				label.Text = "abcdefgh"[j].ToString() + "87654321"[i];
-				label.GlobalPosition = mesh.GlobalPosition;
+				label.Position = mesh.Position;
 				label.ZIndex = 100;
 				_labelContainer.CallDeferred("add_child", label);
 
@@ -96,60 +108,42 @@ public partial class BoardVisual : Node2D
 
 	void SetBoard()
 	{
-		if (_pieces.Count == 0)
+		_pieces.Clear();
+		foreach (var item in _pieceContainer.GetChildren())
 		{
-			foreach (var item in _pieceContainer.GetChildren())
-			{
-				item.QueueFree();
-			}
-			for (int i = 0; i < 32; ++i)
-			{
-				Piece piece = _pieceInstance.Instantiate<Piece>();
-				_pieces.Add(piece);
-				_pieceContainer.CallDeferred("add_child", piece);
-			}
+			item.QueueFree();
 		}
-		int pieceIdx = 0;
 		for (int i = 0; i < 64; ++i)
 		{
 			if (board.BoardStatus[i] != (int)ColourType.FREE)
 			{
 				Vector2I boardPosition = Functions.IntToBoardPosition(i);
-
-				if (pieceIdx >= _pieces.Count)
-				{
-					_pieces.Clear();
-					SetBoard();
-				}
-				Piece piece = _pieces[pieceIdx++];
-
+				Piece piece = _pieceInstance.Instantiate<Piece>();
 				piece.Init((ColourType)_board.BoardStatus[i], boardPosition, this);
+				_pieces.Add(piece);
+				_pieceContainer.CallDeferred("add_child", piece);
 			}
-		}
-		if (pieceIdx < _pieces.Count)
-		{
-			for (int i = pieceIdx; pieceIdx < _pieces.Count; ++i)
-			{
-				if(!_pieces[i].IsQueuedForDeletion())
-					_pieces[i].QueueFree();
-			}
-			_pieces.RemoveRange(pieceIdx, _pieces.Count - pieceIdx);
 		}
 	}
 
-	public bool HumanMakeMove(int pieceIndex, Vector2I initialPosition, Vector2I finalPosition)
+	public async Task<bool> HumanMakeMove(int pieceIndex, Vector2I initialPosition, Vector2I finalPosition)
 	{
 		Move m;
 		bool legal = false;
 		int promoteTo = -1;
+
+		if (!_board.SquaresWithMoves.Contains(Functions.BoardPositionToInt(initialPosition)))
+		{
+			return false;
+		}
 		
 		if ((pieceIndex - 1) % 6 == (int)ColourType.WHITE_PAWN - 1)
 		{
 			
 			if (pieceIndex == (int)ColourType.WHITE_PAWN && initialPosition.Y == 1)
-				promoteTo = WhitePromoteTo;
+				promoteTo = await _promoteTo!.Invoke(true);
 			else if (pieceIndex == (int)ColourType.BLACK_PAWN && initialPosition.Y == 6)
-				promoteTo = BlackPromoteTo;
+				promoteTo = await _promoteTo!.Invoke(false);
 		}
 		
 		m = new Move(
@@ -162,10 +156,8 @@ public partial class BoardVisual : Node2D
 
 		if (legal)
 		{
-			MoveMade?.Invoke(_board.WhiteTurn);
+			EmitSignal(SignalName.MoveMade, board.WhiteTurn);
 		}
-
-		_moved = true;
 		
 		return legal;
 	}
@@ -210,7 +202,7 @@ public partial class BoardVisual : Node2D
 		{
 			foreach (var item in moves)
 			{
-				MeshInstance2D mesh = _squareContainer.GetChild<MeshInstance2D>(item.finalPosition);
+				Node2D mesh = _squareContainer.GetChild<Node2D>(item.finalPosition);
 				if (mesh.Modulate == _darkSquares)
 					mesh.Modulate = _pathDarkSquare;
 				else if(mesh.Modulate == _lightSquares)
@@ -224,12 +216,12 @@ public partial class BoardVisual : Node2D
 		foreach (var item in _squareContainer.GetChildren())
 		{
 			
-			if ((item as MeshInstance2D).Modulate == _pathDarkSquare || 
-					(item as MeshInstance2D).Modulate == _attackDarkSqaure)
-				(item as MeshInstance2D).Modulate = _darkSquares;
-			else if ((item as MeshInstance2D).Modulate == _pathLightSquare ||
-					 (item as MeshInstance2D).Modulate == _attackLighSquare)
-				(item as MeshInstance2D).Modulate = _lightSquares;
+			if ((item as Node2D)!.Modulate == _pathDarkSquare || 
+					(item as Node2D)!.Modulate == _attackDarkSqaure)
+				(item as Node2D)!.Modulate = _darkSquares;
+			else if ((item as Node2D)!.Modulate == _pathLightSquare ||
+					 (item as Node2D)!.Modulate == _attackLighSquare)
+				(item as Node2D)!.Modulate = _lightSquares;
 		}
 	}
 	
@@ -254,7 +246,7 @@ public partial class BoardVisual : Node2D
 	//Converts global coordinates to coordinates of the chess board
 	public Vector2I GlobalPositionToBoardPosition(Vector2 globalPos){
 		globalPos -= _positionPlaceHolder.GlobalPosition;
-		Vector2I @out = new Vector2I((int)(globalPos.X/50.0f),(int)(globalPos.Y/50f));
+		Vector2I @out = new Vector2I((int)(globalPos.X/SIZE),(int)(globalPos.Y/SIZE));
 		if(@out.X < 0 || @out.X >= 8 || @out.Y < 0 || @out.Y >= 8)
 			@out = -1 * Vector2I.One;
 		return @out;
@@ -274,12 +266,11 @@ public partial class BoardVisual : Node2D
 		_pieceContainer = GetNode<Node2D>("Marker/Piece");
 		_labelContainer = GetNode<Node2D>("Marker/Labels");
 		_squareContainer = GetNode<Node2D>("Marker/Squares");
-
-		_squareContainer.Position -= _positionPlaceHolder.Position;
-		_pieceContainer.Position += Vector2.One * 23;
-		_labelContainer.Position -= _positionPlaceHolder.Position;
 		
 		Generate();
+
+		Board.MoveMade += _OnBoardMoveMade;
+
 	}
 
 	public override void _Process(double delta)
@@ -289,6 +280,52 @@ public partial class BoardVisual : Node2D
 			_moved = false;
 			RefreshBoard();
 		}
+		
+	}
+
+	public override void _ExitTree()
+	{
+		Board.MoveMade -= _OnBoardMoveMade;
+	}
+
+	public void _OnBoardMoveMade(Move move, bool capture)
+	{
+
+		if (capture)
+		{
+			int i = _pieces.FindIndex(delegate(Piece m) { return m.IntBoardPosition == move.finalPosition; });
+			if (i == -1)
+			{
+				bool _whiteTurn = move.piece <= (int)ColourType.WHITE_PAWN;
+				int pos = move.finalPosition + (_whiteTurn ? 8 : -8);
+				i = _pieces.FindIndex(delegate(Piece m) { return m.IntBoardPosition == pos; });
+			}
+			_pieces[i].QueueFree();
+			_pieces.RemoveAt(i);
+		}
+		
+		Piece p = _pieces.Find(delegate(Piece m) { return m.IntBoardPosition == move.position; });
+		
+		
+		p.Init((move.promoteTo == -1) ? p.colourType : ((ColourType)move.promoteTo),
+			Functions.IntToBoardPosition(move.finalPosition), this);
+		
+
+		if (Mathf.Abs(move.finalPosition - move.position) == 2)
+		{
+			if (p.colourType == ColourType.BLACK_KING || p.colourType == ColourType.WHITE_KING)
+			{
+				if (Mathf.Abs(move.finalPosition - move.position) == 2)
+				{
+					int modifier = move.finalPosition < move.position ? 1 : -1;
+					int rookPos = (modifier == -1) ? (move.position + 3) : (move.position - 4);
+
+					p = _pieces.Find(delegate(Piece m) { return m.IntBoardPosition == rookPos; });
+					p.Init(p.colourType, Functions.IntToBoardPosition(move.finalPosition + modifier), this);
+				}
+			}
+		}
+		
 	}
 }
 
